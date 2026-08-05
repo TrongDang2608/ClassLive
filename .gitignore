@@ -1,0 +1,21 @@
+# Các thư mục chứa thư viện (Không bao giờ push)
+node_modules/
+jspm_packages/
+
+# Các thư mục build
+dist/
+build/
+out/
+
+# Các file chứa biến môi trường và khóa bảo mật (Không bao giờ push)
+.env
+.env.*.local
+.env.local
+
+# File log lỗi
+npm-debug.log*
+yarn-error.log*
+
+# Các file hệ thống tự sinh
+.DS_Store
+Thumbs.db
