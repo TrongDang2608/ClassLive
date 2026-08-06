@@ -42,12 +42,12 @@ class AuthService {
 
   // 2. Bước 1 Đăng nhập: Kiểm tra Username / Password
   async loginPassword(username, password) {
-    const user = await userRepository.findByUsername(username);
-    if (!user) throw new Error('Username hoặc Mật khẩu không đúng.');
+    const user = await userRepository.findByUsernameOrEmail(username);
+    if (!user) throw new Error('Username/Email hoặc Mật khẩu không đúng.');
 
     // Kiểm tra mật khẩu
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) throw new Error('Username hoặc Mật khẩu không đúng.');
+    if (!isMatch) throw new Error('Username/Email hoặc Mật khẩu không đúng.');
 
     // Tự động gửi OTP
     const code = this._generateCode();
@@ -58,10 +58,20 @@ class AuthService {
     if (!user.phone) throw new Error('Tài khoản không có số điện thoại để gửi mã OTP.');
     await smsService.sendOtpSms(user.phone, code);
 
-    // Trả về userId để frontend tiếp tục gọi API validate OTP
+    // Che số điện thoại dạng +84 ******678
+    const rawPhone = user.phone;
+    let maskedPhone = rawPhone;
+    if (rawPhone.length > 6) {
+      const prefix = rawPhone.startsWith('+') ? rawPhone.slice(0, 3) : rawPhone.slice(0, 2);
+      const suffix = rawPhone.slice(-3);
+      maskedPhone = `${prefix} ******${suffix}`;
+    }
+
+    // Trả về userId và maskedPhone để frontend tiếp tục gọi API validate OTP
     return {
-      message: 'Đăng nhập thành công bước 1. Mã OTP đã được gửi đến số điện thoại của bạn.',
-      userId: user.id
+      message: 'Đăng nhập thành công bước 1. Mã OTP đã được gửi.',
+      userId: user.id,
+      maskedPhone: maskedPhone
     };
   }
 
