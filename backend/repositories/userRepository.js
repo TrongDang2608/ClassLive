@@ -1,0 +1,42 @@
+const { getFirestore } = require('firebase-admin/firestore');
+const User = require('../models/User');
+
+class UserRepository {
+  constructor() {
+    this.db = getFirestore();
+    this.collection = this.db.collection('users');
+  }
+
+  async findById(id) {
+    const doc = await this.collection.doc(id).get();
+    if (!doc.exists) return null;
+    return new User(doc.id, doc.data());
+  }
+
+  async findByUsername(username) {
+    const snapshot = await this.collection.where('username', '==', username).limit(1).get();
+    if (snapshot.empty) return null;
+    const doc = snapshot.docs[0];
+    return new User(doc.id, doc.data());
+  }
+
+  async findByPhone(phone) {
+    const snapshot = await this.collection.where('phone', '==', phone).limit(1).get();
+    if (snapshot.empty) return null;
+    const doc = snapshot.docs[0];
+    return new User(doc.id, doc.data());
+  }
+
+  async findByEmail(email) {
+    const snapshot = await this.collection.where('email', '==', email).limit(1).get();
+    if (snapshot.empty) return null;
+    const doc = snapshot.docs[0];
+    return new User(doc.id, doc.data());
+  }
+
+  async update(id, data) {
+    await this.collection.doc(id).update(data);
+  }
+}
+
+module.exports = new UserRepository();
