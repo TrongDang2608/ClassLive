@@ -1,20 +1,23 @@
-import axios from 'axios';
-
-const API_URL = 'http://localhost:5000/api/auth';
+import axiosClient from '../../utils/axiosClient';
 
 const AuthService = {
   login: async (username, password) => {
-    const response = await axios.post(`${API_URL}/login`, { username, password });
+    const response = await axiosClient.post('/auth/login', { username, password });
     return response.data;
   },
 
   validateOtp: async (userId, accessCode) => {
-    const response = await axios.post(`${API_URL}/validateAccessCode`, { userId, accessCode });
+    const response = await axiosClient.post('/auth/validateAccessCode', { userId, accessCode });
     return response.data;
   },
   
   setupAccount: async (userId, username, password) => {
-    const response = await axios.post(`${API_URL}/setup-account`, { userId, username, password });
+    const response = await axiosClient.post('/auth/setup-account', { userId, username, password });
+    return response.data;
+  },
+
+  logout: async (refreshToken) => {
+    const response = await axiosClient.post('/auth/logout', { refreshToken });
     return response.data;
   }
 };

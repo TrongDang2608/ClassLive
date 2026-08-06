@@ -72,8 +72,9 @@ const OtpPage = () => {
 
     try {
       const response = await AuthService.validateOtp(userId, code);
-      // Save token (in real app, use Context or Redux)
+      // Save token and refreshToken (in real app, use Context or Redux for better state management)
       localStorage.setItem('token', response.token);
+      localStorage.setItem('refreshToken', response.refreshToken);
       localStorage.setItem('role', response.role);
       
       // Navigate based on role

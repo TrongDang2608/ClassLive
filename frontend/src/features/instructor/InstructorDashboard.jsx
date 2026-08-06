@@ -1,8 +1,26 @@
 import React from 'react';
-import { LayoutDashboard, Users, BookOpen, LifeBuoy, Bell, Search, GraduationCap, Laptop, CheckCircle, MessageSquare } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Users, BookOpen, LifeBuoy, Bell, Search, GraduationCap, Laptop, CheckCircle, MessageSquare, LogOut } from 'lucide-react';
+import AuthService from '../auth/AuthService';
 import '../auth/auth.css'; // Reuse CSS vars
 
 const InstructorDashboard = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (refreshToken) {
+        await AuthService.logout(refreshToken);
+      }
+    } catch (err) {
+      console.error('Lỗi khi đăng xuất:', err);
+    } finally {
+      localStorage.clear();
+      navigate('/login');
+    }
+  };
+
   return (
     <div className="dashboard-layout animate-fade-in" style={{ display: 'grid', gridTemplateColumns: '280px 1fr', height: '100vh' }}>
       <aside className="sidebar" style={{ background: 'var(--white)', borderRight: '1px solid var(--border)', padding: '32px 24px', display: 'flex', flexDirection: 'column' }}>
@@ -24,7 +42,10 @@ const InstructorDashboard = () => {
             <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '100px', background: 'var(--gold)', color: 'var(--white)' }}>3</span>
           </a>
         </nav>
-        <div style={{ paddingTop: '24px', borderTop: '1px solid var(--border)' }}>
+        <div style={{ paddingTop: '24px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <a onClick={handleLogout} className="sidebar-item" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#D32F2F', cursor: 'pointer', transition: 'all 0.3s ease' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(211, 47, 47, 0.08)' }} onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}>
+            <LogOut size={18} /> Đăng xuất
+          </a>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '8px', background: 'var(--bg-warm)', border: '1px solid var(--border)' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '600', color: 'var(--gold)' }}>
               NT
