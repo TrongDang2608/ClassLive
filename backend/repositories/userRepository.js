@@ -14,10 +14,21 @@ class UserRepository {
   }
 
   async findByUsername(username) {
-    const snapshot = await this.collection.where('username', '==', username).limit(1).get();
+    const snapshot = await this.collection.where('username', '==', username).get();
     if (snapshot.empty) return null;
-    const doc = snapshot.docs[0];
-    return new User(doc.id, doc.data());
+    return new User(snapshot.docs[0].id, snapshot.docs[0].data());
+  }
+
+  // Hỗ trợ đăng nhập cả Username và Email
+  async findByUsernameOrEmail(identifier) {
+    // Thử tìm theo username trước
+    let snapshot = await this.collection.where('username', '==', identifier).get();
+    if (snapshot.empty) {
+      // Nếu không thấy, thử tìm theo email
+      snapshot = await this.collection.where('email', '==', identifier).get();
+    }
+    if (snapshot.empty) return null;
+    return new User(snapshot.docs[0].id, snapshot.docs[0].data());
   }
 
   async findByPhone(phone) {
