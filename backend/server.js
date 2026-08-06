@@ -31,6 +31,10 @@ const io = new Server(server, {
   cors: { origin: '*' }
 });
 
+// Routes
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
+
 // Route kiểm tra
 app.get('/', (req, res) => {
   res.send('ClassLive Backend is running!');

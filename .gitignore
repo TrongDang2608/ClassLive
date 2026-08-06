@@ -11,7 +11,7 @@ out/
 .env
 .env.*.local
 .env.local
-
+firebaseServiceAccount.json
 # File log lỗi
 npm-debug.log*
 yarn-error.log*
@@ -19,5 +19,3 @@ yarn-error.log*
 # Các file hệ thống tự sinh
 .DS_Store
 Thumbs.db
-
-firebaseServiceAccount.json
