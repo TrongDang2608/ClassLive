@@ -115,19 +115,65 @@ class AuthService {
     // Xóa mã OTP
     await otpRepository.deleteOtp(userId);
 
-    // Sinh JWT Token để frontend lưu vào localStorage/Cookies
-    const token = jwt.sign(
+    // Sinh Access Token (15 phút)
+    const accessToken = jwt.sign(
       { id: user.id, role: user.role }, 
       process.env.JWT_SECRET, 
-      { expiresIn: '24h' }
+      { expiresIn: '15m' }
+    );
+
+    // Sinh Refresh Token (Ngẫu nhiên hoặc JWT dài hạn - ở đây dùng random hex cho đơn giản & an toàn lưu DB)
+    const crypto = require('crypto');
+    const refreshToken = crypto.randomBytes(40).toString('hex');
+    
+    // Lưu Refresh Token vào DB, hết hạn sau 2 ngày
+    const refreshTokenRepository = require('../repositories/refreshTokenRepository');
+    const expiresAt = Date.now() + 2 * 24 * 60 * 60 * 1000;
+    await refreshTokenRepository.save(user.id, refreshToken, expiresAt);
+
+    return {
+      success: true,
+      userType: user.role, // Theo yêu cầu của spec cũ
+      role: user.role,
+      token: accessToken,
+      refreshToken: refreshToken
+    };
+  }
+
+  // 5. Cấp lại Access Token mới dựa vào Refresh Token
+  async refreshToken(token) {
+    const refreshTokenRepository = require('../repositories/refreshTokenRepository');
+    const tokenData = await refreshTokenRepository.findByToken(token);
+    
+    if (!tokenData) {
+      throw new Error('Refresh Token không hợp lệ hoặc đã bị thu hồi.');
+    }
+
+    const user = await userRepository.findById(tokenData.userId);
+    if (!user) {
+      // User đã bị xóa khỏi hệ thống nhưng token còn sót -> xóa luôn
+      await refreshTokenRepository.deleteByToken(token);
+      throw new Error('Tài khoản không tồn tại.');
+    }
+
+    // Sinh Access Token mới (15 phút)
+    const newAccessToken = jwt.sign(
+      { id: user.id, role: user.role }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '15m' }
     );
 
     return {
       success: true,
-      userType: user.role, // Trả về theo yêu cầu của spec cũ
-      role: user.role,
-      token: token
+      token: newAccessToken
     };
+  }
+
+  // 6. Đăng xuất: Xóa Refresh Token
+  async logout(token) {
+    const refreshTokenRepository = require('../repositories/refreshTokenRepository');
+    await refreshTokenRepository.deleteByToken(token);
+    return { success: true, message: 'Đăng xuất thành công' };
   }
 }
 

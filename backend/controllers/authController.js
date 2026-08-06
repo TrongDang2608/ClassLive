@@ -48,3 +48,29 @@ exports.validateAccessCode = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
+exports.refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ error: 'Thiếu Refresh Token' });
+    }
+    const result = await authService.refreshToken(refreshToken);
+    res.json(result);
+  } catch (error) {
+    res.status(401).json({ error: error.message });
+  }
+};
+
+exports.logout = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ error: 'Thiếu Refresh Token' });
+    }
+    const result = await authService.logout(refreshToken);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
