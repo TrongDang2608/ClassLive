@@ -60,14 +60,32 @@ class InstructorService {
   async getUsers(roleFilter, page = 1, limit = 10) {
     const total = await userRepository.countAll(roleFilter);
     const users = await userRepository.findAll(roleFilter, page, limit);
+    const lessonRepository = require('../repositories/lessonRepository');
     
-    const data = users.map(u => ({
-      id: u.id,
-      name: u.name,
-      username: u.username,
-      phone: u.phone,
-      email: u.email,
-      role: u.role
+    const data = await Promise.all(users.map(async u => {
+      let assigned = [];
+      if (u.role === 'student') {
+        const assignments = await lessonRepository.findAssignmentsByStudent(u.id);
+        // Lấy thông tin chi tiết từng bài giảng
+        assigned = await Promise.all(assignments.map(async assign => {
+          const lesson = await lessonRepository.findLessonById(assign.lessonId);
+          return {
+            lessonId: assign.lessonId,
+            title: lesson ? lesson.title : 'Bài giảng đã bị xóa',
+            status: assign.status,
+            assignedAt: assign.assignedAt
+          };
+        }));
+      }
+      return {
+        id: u.id,
+        name: u.name,
+        username: u.username,
+        phone: u.phone,
+        email: u.email,
+        role: u.role,
+        assignedLessons: assigned
+      };
     }));
 
     return {
@@ -86,14 +104,25 @@ class InstructorService {
     const user = await userRepository.findByPhoneOrId(identifier);
     if (!user) throw new Error('Không tìm thấy người dùng này.');
     
-    // Tạm thời chưa có bảng Lesson, trả về thông tin user cơ bản
+    const lessonRepository = require('../repositories/lessonRepository');
+    const assignments = await lessonRepository.findAssignmentsByStudent(user.id);
+    const assignedLessons = await Promise.all(assignments.map(async assign => {
+      const lesson = await lessonRepository.findLessonById(assign.lessonId);
+      return {
+        lessonId: assign.lessonId,
+        title: lesson ? lesson.title : 'Bài giảng đã bị xóa',
+        status: assign.status,
+        assignedAt: assign.assignedAt
+      };
+    }));
+
     return {
       id: user.id,
       name: user.name,
       phone: user.phone,
       email: user.email,
       role: user.role,
-      assignedLessons: [] // Placeholder cho tương lai
+      assignedLessons
     };
   }
 

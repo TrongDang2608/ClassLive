@@ -1,5 +1,7 @@
 const lessonService = require('../services/lessonService');
 const catchAsync = require('../utils/catchAsync');
+const fs = require('fs');
+const path = require('path');
 
 exports.createLesson = catchAsync(async (req, res) => {
   const instructorId = req.user.id;
@@ -68,8 +70,41 @@ exports.updateLesson = catchAsync(async (req, res) => {
   if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
   if (attachmentUrl !== undefined) updateData.attachmentUrl = attachmentUrl;
 
-  // Nếu muốn update files phức tạp hơn, ta có thể xử lý req.files thêm tại đây.
-  // Hiện tại phiên bản đơn giản chỉ cập nhật text.
+  // Lấy bài giảng cũ để so sánh
+  const oldLesson = await lessonService.getLessonById(lessonId, instructorId);
+  const oldFiles = oldLesson?.files || [];
+
+  let finalFiles = [];
+  if (req.body.existingFiles !== undefined) {
+    try {
+      finalFiles = JSON.parse(req.body.existingFiles);
+    } catch(e) {}
+
+    // Xóa vật lý những file không còn nằm trong finalFiles
+    const keptUrls = finalFiles.map(f => f.url);
+    const removedFiles = oldFiles.filter(f => !keptUrls.includes(f.url));
+    removedFiles.forEach(f => {
+      if (f.url) {
+        const filePath = path.join(__dirname, '..', f.url);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
+    });
+  } else {
+    // Giữ nguyên file cũ
+    finalFiles = oldFiles;
+  }
+
+  if (req.files && req.files.length > 0) {
+    const newFiles = req.files.map(file => ({
+      originalName: file.originalname,
+      url: `/uploads/${file.filename}`
+    }));
+    finalFiles = [...finalFiles, ...newFiles];
+  }
+
+  if (req.body.existingFiles !== undefined || (req.files && req.files.length > 0)) {
+    updateData.files = finalFiles;
+  }
 
   await lessonService.updateLesson(lessonId, instructorId, updateData);
 
@@ -83,7 +118,20 @@ exports.deleteLesson = catchAsync(async (req, res) => {
   const instructorId = req.user.id;
   const lessonId = req.params.id;
 
+  // Lấy thông tin bài giảng để xóa file vật lý
+  const oldLesson = await lessonService.getLessonById(lessonId, instructorId);
+  
   await lessonService.deleteLesson(lessonId, instructorId);
+
+  // Xóa các file đính kèm khỏi thư mục uploads
+  if (oldLesson && oldLesson.files) {
+    oldLesson.files.forEach(f => {
+      if (f.url) {
+        const filePath = path.join(__dirname, '..', f.url);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
+    });
+  }
 
   res.status(200).json({
     success: true,
