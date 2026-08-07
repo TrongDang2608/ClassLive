@@ -60,14 +60,30 @@ class UserRepository {
     return null;
   }
 
-  async findAll(roleFilter = null) {
+  async findAll(roleFilter = null, page = 1, limit = 10) {
     let query = this.collection;
     if (roleFilter) {
       query = query.where('role', '==', roleFilter);
     }
+    
+    const offset = (page - 1) * limit;
+    if (offset > 0) {
+      query = query.offset(offset);
+    }
+    query = query.limit(limit);
+
     const snapshot = await query.get();
     if (snapshot.empty) return [];
     return snapshot.docs.map(doc => new User(doc.id, doc.data()));
+  }
+
+  async countAll(roleFilter = null) {
+    let query = this.collection;
+    if (roleFilter) {
+      query = query.where('role', '==', roleFilter);
+    }
+    const snapshot = await query.count().get();
+    return snapshot.data().count;
   }
 
   async create(userData) {

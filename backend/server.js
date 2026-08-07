@@ -43,6 +43,10 @@ app.get('/', (req, res) => {
   res.send('ClassLive Backend is running!');
 });
 
+// Error Handling Middleware (Phải nằm cuối cùng)
+const globalErrorHandler = require('./middlewares/errorHandler');
+app.use(globalErrorHandler);
+
 // Chạy server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {

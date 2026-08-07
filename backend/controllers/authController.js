@@ -1,76 +1,50 @@
 const authService = require('../services/authService');
 const { SetupAccountDto, LoginPasswordDto, CreateAccessCodeDto, ValidateAccessCodeDto } = require('../dtos/authDto');
+const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/AppError');
 
-exports.setupAccount = async (req, res) => {
-  try {
-    const dto = new SetupAccountDto(req.body);
-    dto.validate();
-    const result = await authService.setupAccount(dto.userId, dto.username, dto.password);
-    res.status(200).json(result);
-  } catch (error) {
-    console.error('Error in setupAccount:', error);
-    res.status(400).json({ error: error.message });
-  }
-};
+exports.setupAccount = catchAsync(async (req, res, next) => {
+  const dto = new SetupAccountDto(req.body);
+  dto.validate();
+  const result = await authService.setupAccount(dto.userId, dto.username, dto.password);
+  res.status(200).json(result);
+});
 
-exports.loginPassword = async (req, res) => {
-  try {
-    const dto = new LoginPasswordDto(req.body);
-    dto.validate();
-    const result = await authService.loginPassword(dto.username, dto.password);
-    res.status(200).json(result);
-  } catch (error) {
-    console.error('Error in loginPassword:', error);
-    res.status(400).json({ error: error.message });
-  }
-};
+exports.loginPassword = catchAsync(async (req, res, next) => {
+  const dto = new LoginPasswordDto(req.body);
+  dto.validate();
+  const result = await authService.loginPassword(dto.username, dto.password);
+  res.status(200).json(result);
+});
 
-exports.createAccessCode = async (req, res) => {
-  try {
-    const dto = new CreateAccessCodeDto(req.body);
-    dto.validate();
-    const result = await authService.requestAccessCode(dto.userId, dto.type);
-    res.status(200).json(result);
-  } catch (error) {
-    console.error('Error in createAccessCode:', error);
-    res.status(400).json({ error: error.message });
-  }
-};
+exports.createAccessCode = catchAsync(async (req, res, next) => {
+  const dto = new CreateAccessCodeDto(req.body);
+  dto.validate();
+  const result = await authService.requestAccessCode(dto.userId, dto.type);
+  res.status(200).json(result);
+});
 
-exports.validateAccessCode = async (req, res) => {
-  try {
-    const dto = new ValidateAccessCodeDto(req.body);
-    dto.validate();
-    const result = await authService.validateAccessCode(dto.userId, dto.accessCode);
-    res.status(200).json(result);
-  } catch (error) {
-    console.error('Error in validateAccessCode:', error);
-    res.status(400).json({ error: error.message });
-  }
-};
+exports.validateAccessCode = catchAsync(async (req, res, next) => {
+  const dto = new ValidateAccessCodeDto(req.body);
+  dto.validate();
+  const result = await authService.validateAccessCode(dto.userId, dto.accessCode);
+  res.status(200).json(result);
+});
 
-exports.refreshToken = async (req, res) => {
-  try {
-    const { refreshToken } = req.body;
-    if (!refreshToken) {
-      return res.status(400).json({ error: 'Thiếu Refresh Token' });
-    }
-    const result = await authService.refreshToken(refreshToken);
-    res.json(result);
-  } catch (error) {
-    res.status(401).json({ error: error.message });
+exports.refreshToken = catchAsync(async (req, res, next) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    throw new AppError('Thiếu Refresh Token', 400);
   }
-};
+  const result = await authService.refreshToken(refreshToken);
+  res.json(result);
+});
 
-exports.logout = async (req, res) => {
-  try {
-    const { refreshToken } = req.body;
-    if (!refreshToken) {
-      return res.status(400).json({ error: 'Thiếu Refresh Token' });
-    }
-    const result = await authService.logout(refreshToken);
-    res.json(result);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
+exports.logout = catchAsync(async (req, res, next) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    throw new AppError('Thiếu Refresh Token', 400);
   }
-};
+  const result = await authService.logout(refreshToken);
+  res.json(result);
+});

@@ -53,15 +53,28 @@ class InstructorService {
   }
 
   // 2. Lấy danh sách tất cả học viên (hoặc tất cả user nếu roleFilter rỗng)
-  async getUsers(roleFilter) {
-    const users = await userRepository.findAll(roleFilter);
-    return users.map(u => ({
+  async getUsers(roleFilter, page = 1, limit = 10) {
+    const total = await userRepository.countAll(roleFilter);
+    const users = await userRepository.findAll(roleFilter, page, limit);
+    
+    const data = users.map(u => ({
       id: u.id,
       name: u.name,
+      username: u.username,
       phone: u.phone,
       email: u.email,
       role: u.role
     }));
+
+    return {
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 
   // 3. Lấy thông tin 1 học viên (Linh hoạt dùng id hoặc phone)
