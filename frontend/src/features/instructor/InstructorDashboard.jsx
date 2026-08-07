@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, BookOpen, LifeBuoy, Bell, Search, GraduationCap, Laptop, CheckCircle, MessageSquare, LogOut } from 'lucide-react';
+import { Toaster } from 'react-hot-toast';
 import AuthService from '../auth/AuthService';
+import UserManagement from './UserManagement';
 import '../auth/auth.css'; // Reuse CSS vars
 
 const InstructorDashboard = () => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const handleLogout = async () => {
     try {
@@ -21,44 +24,14 @@ const InstructorDashboard = () => {
     }
   };
 
-  return (
-    <div className="dashboard-layout animate-fade-in" style={{ display: 'grid', gridTemplateColumns: '280px 1fr', height: '100vh' }}>
-      <aside className="sidebar" style={{ background: 'var(--white)', borderRight: '1px solid var(--border)', padding: '32px 24px', display: 'flex', flexDirection: 'column' }}>
-        <div className="logo" style={{ fontSize: '28px', marginBottom: '48px', color: 'var(--primary)', fontWeight: '700' }}>
-          Class<span style={{ color: 'var(--gold)' }}>Live</span>
-        </div>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-          <a className="sidebar-item active" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', background: 'var(--primary)', color: 'var(--white)', cursor: 'pointer' }}>
-            <LayoutDashboard size={18} /> Tổng quan
-          </a>
-          <a className="sidebar-item" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-            <Users size={18} /> Danh Sách Lớp
-          </a>
-          <a className="sidebar-item" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-            <BookOpen size={18} /> Chương Trình Học
-          </a>
-          <a className="sidebar-item" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-            <LifeBuoy size={18} /> Hỗ Trợ 
-            <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '100px', background: 'var(--gold)', color: 'var(--white)' }}>3</span>
-          </a>
-        </nav>
-        <div style={{ paddingTop: '24px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <a onClick={handleLogout} className="sidebar-item" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#D32F2F', cursor: 'pointer', transition: 'all 0.3s ease' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(211, 47, 47, 0.08)' }} onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}>
-            <LogOut size={18} /> Đăng xuất
-          </a>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '8px', background: 'var(--bg-warm)', border: '1px solid var(--border)' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '600', color: 'var(--gold)' }}>
-              NT
-            </div>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>Nguyễn Trọng</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Giảng viên cấp cao</div>
-            </div>
-          </div>
-        </div>
-      </aside>
-      
-      <main style={{ padding: '48px', overflowY: 'auto', background: 'var(--bg)' }}>
+  const renderContent = () => {
+    if (activeTab === 'users') {
+      return <UserManagement />;
+    }
+    
+    // Mặc định là dashboard
+    return (
+      <>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px' }} className="animate-slide-right">
           <div>
             <h1 style={{ fontSize: '32px', color: 'var(--primary)' }}>Tổng Quan Giảng Dạy</h1>
@@ -159,6 +132,62 @@ const InstructorDashboard = () => {
             </tbody>
           </table>
         </div>
+      </>
+    );
+  };
+
+  const getSidebarItemStyle = (tabName) => {
+    const isActive = activeTab === tabName;
+    return {
+      display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '8px', 
+      fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s',
+      fontWeight: isActive ? '600' : '500',
+      background: isActive ? 'var(--primary)' : 'transparent',
+      color: isActive ? 'var(--white)' : 'var(--text-secondary)'
+    };
+  };
+
+  return (
+    <div className="dashboard-layout animate-fade-in" style={{ display: 'grid', gridTemplateColumns: '280px 1fr', height: '100vh' }}>
+      <Toaster position="top-right" toastOptions={{ style: { borderRadius: '10px', background: 'var(--white)', color: 'var(--primary)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' } }} />
+      
+      <aside className="sidebar" style={{ background: 'var(--white)', borderRight: '1px solid var(--border)', padding: '32px 24px', display: 'flex', flexDirection: 'column' }}>
+        <div className="logo" style={{ fontSize: '28px', marginBottom: '48px', color: 'var(--primary)', fontWeight: '700' }}>
+          Class<span style={{ color: 'var(--gold)' }}>Live</span>
+        </div>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+          <a onClick={() => setActiveTab('dashboard')} style={getSidebarItemStyle('dashboard')} onMouseEnter={e => { if(activeTab !== 'dashboard') e.currentTarget.style.background = 'var(--bg)' }} onMouseLeave={e => { if(activeTab !== 'dashboard') e.currentTarget.style.background = 'transparent' }}>
+            <LayoutDashboard size={18} /> Tổng quan
+          </a>
+          <a onClick={() => setActiveTab('users')} style={getSidebarItemStyle('users')} onMouseEnter={e => { if(activeTab !== 'users') e.currentTarget.style.background = 'var(--bg)' }} onMouseLeave={e => { if(activeTab !== 'users') e.currentTarget.style.background = 'transparent' }}>
+            <Users size={18} /> Quản lý Học viên
+          </a>
+          <a onClick={() => setActiveTab('lessons')} style={getSidebarItemStyle('lessons')} onMouseEnter={e => { if(activeTab !== 'lessons') e.currentTarget.style.background = 'var(--bg)' }} onMouseLeave={e => { if(activeTab !== 'lessons') e.currentTarget.style.background = 'transparent' }}>
+            <BookOpen size={18} /> Chương Trình Học
+          </a>
+          <a style={getSidebarItemStyle('support')}>
+            <LifeBuoy size={18} /> Hỗ Trợ 
+            <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '100px', background: 'var(--gold)', color: 'var(--white)' }}>3</span>
+          </a>
+        </nav>
+        <div style={{ paddingTop: '24px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <a onClick={handleLogout} className="sidebar-item" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#D32F2F', cursor: 'pointer', transition: 'all 0.3s ease' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(211, 47, 47, 0.08)' }} onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}>
+            <LogOut size={18} /> Đăng xuất
+          </a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '8px', background: 'var(--bg-warm)', border: '1px solid var(--border)' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '600', color: 'var(--gold)' }}>
+              NT
+            </div>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>Nguyễn Trọng</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Giảng viên cấp cao</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+      
+      <main style={{ padding: '48px', overflowY: 'auto', background: 'var(--bg)' }}>
+        {renderContent()}
       </main>
     </div>
   );
