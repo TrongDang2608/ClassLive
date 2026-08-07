@@ -13,7 +13,7 @@ class AuthService {
   }
 
   // 1. Học sinh thiết lập tài khoản từ Link (gửi qua email)
-  async setupAccount(userId, username, password) {
+  async setupAccount(userId, newUsername, newPassword) {
     try {
       const user = await userRepository.findById(userId);
       if (!user) throw new Error('Tài khoản không tồn tại.');
@@ -21,15 +21,15 @@ class AuthService {
       if (user.isSetup) throw new Error('Tài khoản này đã được thiết lập. Vui lòng chuyển đến trang đăng nhập.');
 
       // Kiểm tra username có bị trùng không
-      const existingUser = await userRepository.findByUsername(username);
+      const existingUser = await userRepository.findByUsername(newUsername);
       if (existingUser) throw new Error('Username này đã có người sử dụng. Vui lòng chọn tên khác.');
 
       // Mã hóa mật khẩu
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
 
       // Cập nhật DB
       await userRepository.update(userId, {
-        username: username,
+        username: newUsername,
         password: hashedPassword,
         isSetup: true
       });
