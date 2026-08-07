@@ -40,6 +40,7 @@ class EmailService {
             </p>
           </div>
           <div style="text-align: center; margin-top: 24px; color: #8c9baf; font-size: 13px;">
+            <p>Trang chủ hệ thống: <a href="${process.env.FRONTEND_URL}" style="color: #2c3e50; text-decoration: none; font-weight: 500;">${process.env.FRONTEND_URL}</a></p>
             &copy; ${new Date().getFullYear()} ClassLive App. All rights reserved.
           </div>
         </div>
