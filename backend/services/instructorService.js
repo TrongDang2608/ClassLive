@@ -40,14 +40,18 @@ class InstructorService {
 
     const newId = await userRepository.create(userData);
 
-    // MOCK: Giả lập gửi email tài khoản cho người dùng mới
-    console.log('\n----------------------------------------');
-    console.log(`[MOCK EMAIL SENDING] To: ${email || phone}`);
-    console.log(`Subject: Chào mừng bạn gia nhập ClassLive!`);
-    console.log(`Tài khoản của bạn đã được tạo thành công.`);
-    console.log(`Vai trò: ${role.toUpperCase()}`);
-    console.log(`Đăng nhập bằng số điện thoại: ${phone}`);
-    console.log('----------------------------------------\n');
+    // Tạo JWT token cho việc setup mật khẩu (hạn 24h)
+    const jwt = require('jsonwebtoken');
+    const emailService = require('./emailService');
+    const setupToken = jwt.sign({ id: newId }, process.env.JWT_SECRET, { expiresIn: '24h' });
+
+    // Gọi tiến trình gửi mail nền nếu user có cung cấp email
+    if (email) {
+      // Chạy không await để không block API
+      emailService.sendSetupAccountEmail(email, name, setupToken).catch(err => {
+        console.error('Lỗi khi gửi email setup cho:', email, err);
+      });
+    }
 
     return { id: newId, ...userData };
   }
