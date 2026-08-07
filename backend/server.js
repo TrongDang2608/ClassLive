@@ -33,7 +33,10 @@ const io = new Server(server, {
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
+const instructorRoutes = require('./routes/instructorRoutes');
+
 app.use('/api/auth', authRoutes);
+app.use('/api/instructor', instructorRoutes);
 
 // Route kiểm tra
 app.get('/', (req, res) => {
