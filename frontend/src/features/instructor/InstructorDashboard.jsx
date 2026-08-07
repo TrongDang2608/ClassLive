@@ -4,6 +4,7 @@ import { LayoutDashboard, Users, BookOpen, LifeBuoy, Bell, Search, GraduationCap
 import { Toaster } from 'react-hot-toast';
 import AuthService from '../auth/AuthService';
 import UserManagement from './UserManagement';
+import LessonManagement from './LessonManagement';
 import '../auth/auth.css'; // Reuse CSS vars
 
 const InstructorDashboard = () => {
@@ -27,6 +28,10 @@ const InstructorDashboard = () => {
   const renderContent = () => {
     if (activeTab === 'users') {
       return <UserManagement />;
+    }
+    
+    if (activeTab === 'lessons') {
+      return <LessonManagement />;
     }
     
     // Mặc định là dashboard
