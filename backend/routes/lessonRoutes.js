@@ -35,11 +35,10 @@ router.get('/', lessonController.getLessons);
 router.get('/:id', lessonController.getLessonDetails);
 
 // Tạo bài học mới (Có nhận form-data chứa files)
-// Dùng upload.array('files', 5) để nhận tối đa 5 file đính kèm với name form là 'files'
-router.post('/', upload.array('files', 5), lessonController.createLesson);
+router.post('/', upload.any(), lessonController.createLesson);
 
 // Cập nhật bài học
-router.put('/:id', lessonController.updateLesson);
+router.put('/:id', upload.any(), lessonController.updateLesson);
 
 // Xóa bài học
 router.delete('/:id', lessonController.deleteLesson);

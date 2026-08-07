@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 
 exports.setupAccount = catchAsync(async (req, res, next) => {
   const { token, newUsername, newPassword } = req.body;
-  
+
   if (!token || !newUsername || !newPassword) {
     throw new AppError('Token, Username và mật khẩu mới là bắt buộc', 400);
   }
