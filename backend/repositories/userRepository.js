@@ -45,8 +45,43 @@ class UserRepository {
     return new User(doc.id, doc.data());
   }
 
+  // TÌM CẢ THEO PHONE HOẶC ID (Linh hoạt như yêu cầu)
+  async findByPhoneOrId(identifier) {
+    // 1. Thử tìm theo ID trước (vì ID thường dài và không trùng format sđt)
+    let doc = await this.collection.doc(identifier).get();
+    if (doc.exists) {
+      return new User(doc.id, doc.data());
+    }
+    // 2. Thử tìm theo Phone
+    const snapshot = await this.collection.where('phone', '==', identifier).limit(1).get();
+    if (!snapshot.empty) {
+      return new User(snapshot.docs[0].id, snapshot.docs[0].data());
+    }
+    return null;
+  }
+
+  async findAll(roleFilter = null) {
+    let query = this.collection;
+    if (roleFilter) {
+      query = query.where('role', '==', roleFilter);
+    }
+    const snapshot = await query.get();
+    if (snapshot.empty) return [];
+    return snapshot.docs.map(doc => new User(doc.id, doc.data()));
+  }
+
+  async create(userData) {
+    // Firebase tự sinh ID nếu dùng add()
+    const docRef = await this.collection.add(userData);
+    return docRef.id;
+  }
+
   async update(id, data) {
     await this.collection.doc(id).update(data);
+  }
+
+  async delete(id) {
+    await this.collection.doc(id).delete();
   }
 }
 
