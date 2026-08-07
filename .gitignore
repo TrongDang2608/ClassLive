@@ -19,3 +19,6 @@ yarn-error.log*
 # Các file hệ thống tự sinh
 .DS_Store
 Thumbs.db
+
+# Các file tải lên (Uploads)
+backend/uploads/

@@ -5,8 +5,9 @@ const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path');
 
-// Khởi tạo Firebase Admin (Tương thích với phiên bản mới firebase-admin v14+)
+// Khởi tạo Firebase Admin
 let db;
 try {
   const serviceAccount = require('./firebaseServiceAccount.json');
@@ -17,13 +18,16 @@ try {
   console.log('Firebase Admin & Firestore initialized successfully.');
 } catch (error) {
   console.error('Error initializing Firebase:', error.message);
-  process.exit(1); // Dừng server nếu không kết nối được database
+  process.exit(1);
 }
 
 // Khởi tạo Express
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Phục vụ các file trong thư mục uploads tĩnh
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Khởi tạo Server & Socket.io
 const server = http.createServer(app);
@@ -34,9 +38,11 @@ const io = new Server(server, {
 // Routes
 const authRoutes = require('./routes/authRoutes');
 const instructorRoutes = require('./routes/instructorRoutes');
+const lessonRoutes = require('./routes/lessonRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/instructor', instructorRoutes);
+app.use('/api/lessons', lessonRoutes);
 
 // Route kiểm tra
 app.get('/', (req, res) => {
