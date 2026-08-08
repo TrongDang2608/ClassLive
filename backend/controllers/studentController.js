@@ -49,3 +49,13 @@ exports.getProfile = catchAsync(async (req, res) => {
     data: profile
   });
 });
+
+exports.getDashboardStats = catchAsync(async (req, res) => {
+  const studentId = req.user.id;
+  const stats = await studentService.getDashboardStats(studentId);
+  
+  res.status(200).json({
+    success: true,
+    data: stats
+  });
+});

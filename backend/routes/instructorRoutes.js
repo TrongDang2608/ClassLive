@@ -8,12 +8,14 @@ router.use(verifyToken);
 router.use(requireInstructor);
 
 // CRUD Routes cho User Management
-// Lưu ý: Đề bài yêu cầu dùng :phone, nhưng ở Controller ta lấy `identifier` nên truyền vào đây phone hay ID đều chạy được!
 router.post('/addStudent', instructorController.addStudent);
 router.get('/students', instructorController.getStudents);
 router.get('/student/:identifier', instructorController.getStudent);
 router.put('/editStudent/:identifier', instructorController.editStudent);
 router.delete('/student/:identifier', instructorController.deleteStudent);
+
+// API Dashboard Stats
+router.get('/dashboard-stats', instructorController.getDashboardStats);
 
 // API Profile
 router.get('/profile', instructorController.getProfile);

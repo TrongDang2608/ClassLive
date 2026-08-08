@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, LifeBuoy, Bell, Search, GraduationCap, Laptop, CheckCircle, MessageSquare, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { 
+  LayoutDashboard, Users, BookOpen, LifeBuoy, Bell, Search,
+  GraduationCap, Laptop, CheckCircle, MessageSquare, Plus,
+  Settings, LogOut, ChevronLeft, ChevronRight 
+} from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Toaster } from 'react-hot-toast';
 import AuthService from '../auth/AuthService';
 import InstructorService from './InstructorService';
@@ -15,6 +20,13 @@ const InstructorDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    activeLessons: 0,
+    passRate: 0,
+    chartData: [],
+    recentStudents: []
+  });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -27,7 +39,18 @@ const InstructorDashboard = () => {
         console.error('Không thể lấy thông tin giảng viên:', err);
       }
     };
+    const fetchStats = async () => {
+      try {
+        const res = await InstructorService.getDashboardStats();
+        if (res.success) {
+          setStats(res.data);
+        }
+      } catch (err) {
+        console.error('Không thể lấy số liệu thống kê:', err);
+      }
+    };
     fetchProfile();
+    fetchStats();
   }, []);
 
   const handleLogout = async () => {
@@ -65,26 +88,17 @@ const InstructorDashboard = () => {
             <h1 style={{ fontSize: '32px', color: 'var(--primary)' }}>Tổng Quan Giảng Dạy</h1>
             <p style={{ fontSize: '15px', color: 'var(--text-secondary)', marginTop: '4px' }}>Chào buổi sáng, {currentUser?.name || 'Giảng viên'}. Chúc ngài một ngày làm việc hiệu quả.</p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', borderRadius: '100px', background: 'var(--white)', border: '1px solid var(--border)', width: '280px' }}>
-              <Search size={18} color="var(--text-muted)" />
-              <input type="text" placeholder="Tìm kiếm tài liệu..." style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '14px', fontFamily: 'inherit' }} />
-            </div>
-            <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'var(--white)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '10px', right: '10px', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--gold)', border: '2px solid var(--white)' }}></div>
-              <Bell size={20} />
-            </div>
-          </div>
         </div>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', marginBottom: '40px' }} className="animate-slide-right">
+        {/* Thống kê 3 cột */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '40px' }} className="animate-slide-right">
           <div style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '8px', padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <div style={{ width: '48px', height: '48px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--gold-glow)', color: 'var(--gold-dark)' }}>
                 <GraduationCap size={22} />
               </div>
             </div>
-            <div style={{ fontSize: '32px', color: 'var(--primary)', marginBottom: '4px', fontWeight: '700' }}>124</div>
+            <div style={{ fontSize: '32px', color: 'var(--primary)', marginBottom: '4px', fontWeight: '700' }}>{stats.totalStudents}</div>
             <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Tổng Sinh Viên</div>
           </div>
           <div style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '8px', padding: '24px' }}>
@@ -93,8 +107,8 @@ const InstructorDashboard = () => {
                 <Laptop size={22} />
               </div>
             </div>
-            <div style={{ fontSize: '32px', color: 'var(--primary)', marginBottom: '4px', fontWeight: '700' }}>12</div>
-            <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Chuyên Đề Đang Mở</div>
+            <div style={{ fontSize: '32px', color: 'var(--primary)', marginBottom: '4px', fontWeight: '700' }}>{stats.activeLessons}</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Bài Giảng Đã Đăng</div>
           </div>
           <div style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '8px', padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -102,63 +116,67 @@ const InstructorDashboard = () => {
                 <CheckCircle size={22} />
               </div>
             </div>
-            <div style={{ fontSize: '32px', color: 'var(--primary)', marginBottom: '4px', fontWeight: '700' }}>98%</div>
-            <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Tỷ Lệ Đạt Chuẩn</div>
-          </div>
-          <div style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '8px', padding: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--primary-glow)', color: 'var(--primary)' }}>
-                <MessageSquare size={22} />
-              </div>
-            </div>
-            <div style={{ fontSize: '32px', color: 'var(--primary)', marginBottom: '4px', fontWeight: '700' }}>3</div>
-            <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Yêu Cầu Cần Duyệt</div>
+            <div style={{ fontSize: '32px', color: 'var(--primary)', marginBottom: '4px', fontWeight: '700' }}>{stats.passRate}%</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Tỉ Lệ Đạt Chuẩn</div>
           </div>
         </div>
-        
-        <div style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '8px', padding: '28px', marginBottom: '32px' }} className="animate-slide-right">
-          <div style={{ fontSize: '20px', color: 'var(--primary)', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '700' }}>
-            Học Viên Xuất Sắc 
-            <button className="btn btn-gold">+ Thêm Mới</button>
+
+        {/* Biểu đồ & Học viên mới */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '24px', marginBottom: '40px' }} className="animate-slide-up">
+          {/* Biểu đồ trạng thái bài học */}
+          <div style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px', display: 'flex', flexDirection: 'column' }}>
+            <h3 style={{ fontSize: '18px', color: 'var(--primary)', fontWeight: '700', marginBottom: '16px' }}>Trạng Thái Bài Tập</h3>
+            <div style={{ width: '100%', height: '240px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={stats.chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {stats.chartData?.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)' }}>Học Viên</th>
-                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)' }}>Chuyên Ngành</th>
-                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)' }}>Trạng Thái</th>
-                <th style={{ textAlign: 'left', padding: '14px 20px', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)' }}>Tiến Độ</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-light)', fontSize: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '600', color: 'var(--white)', background: 'var(--gold)' }}>AJ</div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>Alice Johnson</div>
+
+          {/* Học viên mới đăng ký */}
+          <div style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '18px', color: 'var(--primary)', fontWeight: '700' }}>Học Viên Mới Đăng Ký</h3>
+              <button onClick={() => setActiveTab('users')} className="btn btn-gold" style={{ padding: '6px 12px', fontSize: '13px' }}>Quản lý</button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {stats.recentStudents?.length === 0 ? (
+                <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '40px 0' }}>Chưa có học viên nào</div>
+              ) : (
+                stats.recentStudents?.map(student => (
+                  <div key={student.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid var(--border-light)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary-glow)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600' }}>
+                        {student.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: '600', color: 'var(--text)' }}>{student.name}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{student.email || 'Không có email'}</div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{student.phone}</div>
                   </div>
-                </td>
-                <td style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-light)', fontSize: '14px' }}>Nghệ Thuật Học</td>
-                <td style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-light)', fontSize: '14px' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 12px', borderRadius: '100px', fontSize: '12px', fontWeight: '500', color: 'var(--success)', background: 'var(--success-glow)', border: '1px solid rgba(46,125,50,0.2)' }}>Đang Học</span>
-                </td>
-                <td style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-light)', fontSize: '14px', color: 'var(--primary)', fontWeight: '600' }}>85%</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-light)', fontSize: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '600', color: 'var(--white)', background: 'var(--primary)' }}>DW</div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>David Wilson</div>
-                  </div>
-                </td>
-                <td style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-light)', fontSize: '14px' }}>Triết Học</td>
-                <td style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-light)', fontSize: '14px' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 12px', borderRadius: '100px', fontSize: '12px', fontWeight: '500', color: 'var(--success)', background: 'var(--success-glow)', border: '1px solid rgba(46,125,50,0.2)' }}>Đang Học</span>
-                </td>
-                <td style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-light)', fontSize: '14px', color: 'var(--gold-dark)', fontWeight: '600' }}>100%</td>
-              </tr>
-            </tbody>
-          </table>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </>
     );
