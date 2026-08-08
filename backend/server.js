@@ -35,16 +35,21 @@ const io = new Server(server, {
   cors: { origin: '*' }
 });
 
+// Gọi handler xử lý sự kiện Socket
+require('./socket/chatHandler')(io);
+
 // Routes
 const authRoutes = require('./routes/authRoutes');
 const instructorRoutes = require('./routes/instructorRoutes');
 const lessonRoutes = require('./routes/lessonRoutes');
 const studentRoutes = require('./routes/studentRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/instructor', instructorRoutes);
 app.use('/api/lessons', lessonRoutes);
 app.use('/api/student', studentRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Route kiểm tra
 app.get('/', (req, res) => {

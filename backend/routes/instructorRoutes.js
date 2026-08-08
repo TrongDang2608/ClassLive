@@ -15,4 +15,7 @@ router.get('/student/:identifier', instructorController.getStudent);
 router.put('/editStudent/:identifier', instructorController.editStudent);
 router.delete('/student/:identifier', instructorController.deleteStudent);
 
+// API Profile
+router.get('/profile', instructorController.getProfile);
+
 module.exports = router;
