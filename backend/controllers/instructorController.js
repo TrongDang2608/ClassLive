@@ -34,6 +34,20 @@ class InstructorController {
     const result = await instructorService.deleteUser(identifier);
     res.status(200).json(result);
   });
+
+  getProfile = catchAsync(async (req, res, next) => {
+    const instructorId = req.user.id;
+    const userRepository = require('../repositories/userRepository');
+    const user = await userRepository.findById(instructorId);
+    if (!user) {
+      throw new (require('../utils/AppError'))('Giảng viên không tồn tại', 404);
+    }
+    const { password, ...safeUser } = user;
+    res.status(200).json({
+      success: true,
+      data: safeUser
+    });
+  });
 }
 
 module.exports = new InstructorController();
