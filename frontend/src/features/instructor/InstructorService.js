@@ -22,6 +22,11 @@ const InstructorService = {
   deleteUser: async (identifier) => {
     const response = await axiosClient.delete(`/instructor/student/${identifier}`);
     return response.data;
+  },
+
+  getProfile: async () => {
+    const response = await axiosClient.get('/instructor/profile');
+    return response.data;
   }
 };
 
