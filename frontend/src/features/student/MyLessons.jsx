@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BookOpen, Clock, CheckCircle2, User, ArrowRight, Eye, RefreshCw } from 'lucide-react';
+import { BookOpen, Clock, CheckCircle2, User, ArrowRight, Eye, RefreshCw, Search, ArrowUpDown } from 'lucide-react';
 import StudentService from './StudentService';
 import toast from 'react-hot-toast';
 
@@ -7,6 +7,8 @@ const MyLessons = ({ onSelectLesson }) => {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' or 'completed'
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
 
   const fetchLessons = async () => {
     setLoading(true);
@@ -27,26 +29,66 @@ const MyLessons = ({ onSelectLesson }) => {
     fetchLessons();
   }, []);
 
-  const filteredAssignments = assignments.filter(
-    (item) => item.status === activeTab
-  );
+  let filteredAssignments = assignments.filter((item) => {
+    const matchTab = item.status === activeTab;
+    const matchSearch = item.lesson?.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        item.lesson?.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchTab && matchSearch;
+  });
+
+  if (sortBy === 'newest') {
+    filteredAssignments.sort((a, b) => (b.assignedAt || 0) - (a.assignedAt || 0));
+  } else if (sortBy === 'oldest') {
+    filteredAssignments.sort((a, b) => (a.assignedAt || 0) - (b.assignedAt || 0));
+  } else if (sortBy === 'title_asc') {
+    filteredAssignments.sort((a, b) => (a.lesson?.title || '').localeCompare(b.lesson?.title || ''));
+  } else if (sortBy === 'title_desc') {
+    filteredAssignments.sort((a, b) => (b.lesson?.title || '').localeCompare(a.lesson?.title || ''));
+  }
 
   return (
     <div className="animate-fade-in" style={{ width: '100%' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
         <div>
           <h1 style={{ fontSize: '32px', color: 'var(--primary)', fontWeight: '700' }}>Khóa Học Của Tôi</h1>
           <p style={{ fontSize: '15px', color: 'var(--text-secondary)', marginTop: '4px' }}>
             Xem các bài giảng được giao và tiến trình học tập của bạn.
           </p>
         </div>
-        <button 
-          onClick={fetchLessons} 
-          className="btn" 
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--border)', background: 'var(--white)', padding: '10px 16px' }}
-        >
-          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> Làm mới
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 16px' }}>
+            <Search size={16} color="var(--text-muted)" />
+            <input 
+              type="text" 
+              placeholder="Tìm tên khóa học..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', width: '200px' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 16px' }}>
+            <ArrowUpDown size={16} color="var(--text-muted)" />
+            <select 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', cursor: 'pointer', color: 'var(--text)' }}
+            >
+              <option value="newest">Mới nhất</option>
+              <option value="oldest">Cũ nhất</option>
+              <option value="title_asc">Tên (A-Z)</option>
+              <option value="title_desc">Tên (Z-A)</option>
+            </select>
+          </div>
+
+          <button 
+            onClick={fetchLessons} 
+            className="btn" 
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--border)', background: 'var(--white)', padding: '10px 16px' }}
+          >
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> Làm mới
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}

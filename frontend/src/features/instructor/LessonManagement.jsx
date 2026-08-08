@@ -5,12 +5,14 @@ import LessonService from './LessonService';
 import LessonModal from './LessonModal';
 import AssignLessonModal from './AssignLessonModal';
 import LessonDetailModal from './LessonDetailModal';
-import { Eye } from 'lucide-react';
+import { Eye, Search, Filter, ArrowUpDown } from 'lucide-react';
 import './instructor.css';
 
 const LessonManagement = () => {
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
   
   // Modals state
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
@@ -80,27 +82,55 @@ const LessonManagement = () => {
 
   return (
     <div className="tab-content animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
         <div>
           <h1 style={{ fontSize: '28px', color: 'var(--primary)', margin: '0 0 8px 0' }}>Quản lý Bài giảng</h1>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Thiết kế bài giảng và tài liệu học tập của bạn.</p>
         </div>
-        <button 
-          onClick={handleCreate}
-          style={{ 
-            display: 'flex', alignItems: 'center', gap: '8px', 
-            background: 'var(--primary)', color: 'var(--white)', 
-            padding: '12px 20px', borderRadius: '8px', 
-            border: 'none', cursor: 'pointer', fontWeight: '600',
-            boxShadow: '0 4px 12px rgba(88, 28, 44, 0.2)',
-            transition: 'transform 0.2s, box-shadow 0.2s'
-          }}
-          onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(88, 28, 44, 0.3)' }}
-          onMouseOut={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(88, 28, 44, 0.2)' }}
-        >
-          <Plus size={20} />
-          Thêm Bài giảng
-        </button>
+
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 16px' }}>
+            <Search size={16} color="var(--text-muted)" />
+            <input 
+              type="text" 
+              placeholder="Tìm tiêu đề, mô tả..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', width: '200px' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 16px' }}>
+            <ArrowUpDown size={16} color="var(--text-muted)" />
+            <select 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', cursor: 'pointer', color: 'var(--text)' }}
+            >
+              <option value="newest">Mới nhất</option>
+              <option value="oldest">Cũ nhất</option>
+              <option value="title_asc">Tên (A-Z)</option>
+              <option value="title_desc">Tên (Z-A)</option>
+            </select>
+          </div>
+
+          <button 
+            onClick={handleCreate}
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: '8px', 
+              background: 'var(--primary)', color: 'var(--white)', 
+              padding: '12px 20px', borderRadius: '8px', 
+              border: 'none', cursor: 'pointer', fontWeight: '600',
+              boxShadow: '0 4px 12px rgba(88, 28, 44, 0.2)',
+              transition: 'transform 0.2s, box-shadow 0.2s'
+            }}
+            onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(88, 28, 44, 0.3)' }}
+            onMouseOut={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(88, 28, 44, 0.2)' }}
+          >
+            <Plus size={20} />
+            Thêm Bài giảng
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -115,9 +145,36 @@ const LessonManagement = () => {
           <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Hãy chia sẻ kiến thức của bạn ngay hôm nay!</p>
           <button className="btn btn-gold" onClick={handleCreate}>Bắt đầu Tạo Bài giảng</button>
         </div>
-      ) : (
-        <div className="lesson-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-          {lessons.map(lesson => (
+      ) : (() => {
+        let filtered = lessons.filter(lesson => {
+          const match = lesson.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        lesson.description?.toLowerCase().includes(searchTerm.toLowerCase());
+          return match;
+        });
+
+        if (sortBy === 'newest') {
+          filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        } else if (sortBy === 'oldest') {
+          filtered.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        } else if (sortBy === 'title_asc') {
+          filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+        } else if (sortBy === 'title_desc') {
+          filtered.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
+        }
+
+        if (filtered.length === 0) {
+          return (
+            <div className="empty-state" style={{ padding: '40px 20px', textAlign: 'center', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <BookOpen size={40} style={{ color: 'var(--text-secondary)', marginBottom: '12px' }} />
+              <h4 style={{ margin: '0 0 4px', color: 'var(--text)' }}>Không tìm thấy bài giảng phù hợp</h4>
+              <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '14px' }}>Thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc.</p>
+            </div>
+          );
+        }
+
+        return (
+          <div className="lesson-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+            {filtered.map(lesson => (
             <div key={lesson.id} className="lesson-card" style={{ 
               backgroundColor: 'var(--white)', 
               borderRadius: '12px', 
@@ -181,9 +238,10 @@ const LessonManagement = () => {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Modals */}
       <LessonModal 

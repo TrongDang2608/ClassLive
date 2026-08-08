@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, User, Shield, Phone, Mail, Eye } from 'lucide-react';
+import { Plus, Edit2, Trash2, User, Shield, Phone, Mail, Eye, Search, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
 import InstructorService from './InstructorService';
 import UserModal from './UserModal';
@@ -9,6 +9,8 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, totalPages: 1 });
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState('all');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -95,25 +97,52 @@ const UserManagement = () => {
 
   return (
     <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
         <div>
           <h1 style={{ fontSize: '28px', color: 'var(--primary)', margin: '0 0 8px 0' }}>Quản lý User</h1>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Xem, thêm, sửa, xóa học sinh và giảng viên hệ thống.</p>
         </div>
-        <button 
-          onClick={() => handleOpenModal()}
-          style={{ 
-            display: 'flex', alignItems: 'center', gap: '8px', 
-            background: 'var(--primary)', color: 'var(--white)', 
-            padding: '12px 20px', borderRadius: '8px', 
-            border: 'none', cursor: 'pointer', fontWeight: '600',
-            boxShadow: '0 4px 12px rgba(44, 62, 80, 0.2)',
-            transition: 'transform 0.2s, box-shadow 0.2s'
-          }}
-        >
-          <Plus size={20} />
-          Thêm Tài Khoản
-        </button>
+        
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 16px' }}>
+            <Search size={16} color="var(--text-muted)" />
+            <input 
+              type="text" 
+              placeholder="Tìm tên, SĐT, Email..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', width: '200px' }}
+            />
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 16px' }}>
+            <Filter size={16} color="var(--text-muted)" />
+            <select 
+              value={filterRole} 
+              onChange={(e) => setFilterRole(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', cursor: 'pointer', color: 'var(--text)' }}
+            >
+              <option value="all">Tất cả vai trò</option>
+              <option value="student">Học sinh</option>
+              <option value="instructor">Giảng viên</option>
+            </select>
+          </div>
+
+          <button 
+            onClick={() => handleOpenModal()}
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: '8px', 
+              background: 'var(--primary)', color: 'var(--white)', 
+              padding: '12px 20px', borderRadius: '8px', 
+              border: 'none', cursor: 'pointer', fontWeight: '600',
+              boxShadow: '0 4px 12px rgba(44, 62, 80, 0.2)',
+              transition: 'transform 0.2s, box-shadow 0.2s'
+            }}
+          >
+            <Plus size={20} />
+            Thêm Tài Khoản
+          </button>
+        </div>
       </div>
 
       <div style={{ background: 'var(--white)', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
@@ -131,10 +160,20 @@ const UserManagement = () => {
           <tbody>
             {loading ? (
               <tr><td colSpan="6" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>Đang tải dữ liệu...</td></tr>
-            ) : users.length === 0 ? (
-              <tr><td colSpan="6" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>Chưa có tài khoản nào.</td></tr>
-            ) : (
-              users.map(user => (
+            ) : (() => {
+              const filteredUsers = users.filter(u => {
+                const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                      u.phone.includes(searchTerm) || 
+                                      (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase()));
+                const matchesRole = filterRole === 'all' || u.role === filterRole;
+                return matchesSearch && matchesRole;
+              });
+
+              if (filteredUsers.length === 0) {
+                return <tr><td colSpan="6" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>Không tìm thấy tài khoản nào phù hợp.</td></tr>;
+              }
+
+              return filteredUsers.map(user => (
                 <tr key={user.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background = 'var(--bg)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                   <td style={{ padding: '16px 24px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -185,8 +224,8 @@ const UserManagement = () => {
                     </button>
                   </td>
                 </tr>
-              ))
-            )}
+              ));
+            })()}
           </tbody>
         </table>
 
