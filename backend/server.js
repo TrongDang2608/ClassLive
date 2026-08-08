@@ -39,10 +39,12 @@ const io = new Server(server, {
 const authRoutes = require('./routes/authRoutes');
 const instructorRoutes = require('./routes/instructorRoutes');
 const lessonRoutes = require('./routes/lessonRoutes');
+const studentRoutes = require('./routes/studentRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/instructor', instructorRoutes);
 app.use('/api/lessons', lessonRoutes);
+app.use('/api/student', studentRoutes);
 
 // Route kiểm tra
 app.get('/', (req, res) => {

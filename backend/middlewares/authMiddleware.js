@@ -27,3 +27,10 @@ exports.requireInstructor = (req, res, next) => {
   }
   next();
 };
+
+exports.requireStudent = (req, res, next) => {
+  if (!req.user || req.user.role !== 'student') {
+    return res.status(403).json({ error: 'Chỉ Học viên mới có quyền thực hiện hành động này' });
+  }
+  next();
+};
