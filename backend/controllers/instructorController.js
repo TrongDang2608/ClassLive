@@ -30,7 +30,7 @@ class InstructorController {
   });
 
   deleteStudent = catchAsync(async (req, res, next) => {
-    const result = await instructorService.deleteStudent(req.params.identifier);
+    const result = await instructorService.deleteUser(req.params.identifier);
     res.status(200).json(result);
   });
 
