@@ -87,9 +87,9 @@ Follow these steps to run the project on your local computer.
    # JWT Security Key
    JWT_SECRET=your_jwt_secret_key
 
-   # SMS API (ClickSend)
-   CLICKSEND_USERNAME=your_clicksend_email
-   CLICKSEND_API_KEY=your_clicksend_api_key
+   # SMS API (eSMS)
+   ESMS_API_KEY=your_esms_api_key
+   ESMS_SECRET_KEY=your_esms_secret_key
 
    # Email SMTP (Brevo)
    BREVO_SMTP_HOST=smtp-relay.brevo.com
