@@ -14,4 +14,7 @@ router.put('/lessons/:id/done', studentController.completeLesson);
 router.get('/profile', studentController.getProfile);
 router.put('/profile', studentController.updateProfile);
 
+// API Dashboard
+router.get('/dashboard-stats', studentController.getDashboardStats);
+
 module.exports = router;

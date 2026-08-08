@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, User, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { 
+  BookOpen, User, LifeBuoy, Bell, Search, GraduationCap, Laptop, 
+  CheckCircle, MessageSquare, LogOut, ChevronLeft, ChevronRight 
+} from 'lucide-react';
+import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Toaster } from 'react-hot-toast';
 import AuthService from '../auth/AuthService';
 import StudentService from './StudentService';
@@ -12,11 +16,17 @@ import '../auth/auth.css';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('lessons'); // 'lessons' or 'profile'
+  const [activeTab, setActiveTab] = useState('dashboard'); // Mặc định chuyển sang 'dashboard'
   const [activeLesson, setActiveLesson] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [profile, setProfile] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [stats, setStats] = useState({
+    totalLessons: 0,
+    completedLessons: 0,
+    pendingLessons: 0,
+    progress: 0
+  });
 
   useEffect(() => {
     // Lấy thông tin user để hiển thị trên sidebar
@@ -30,7 +40,18 @@ const StudentDashboard = () => {
         console.error('Không thể tải profile', err);
       }
     };
+    const loadStats = async () => {
+      try {
+        const res = await StudentService.getDashboardStats();
+        if (res.success) {
+          setStats(res.data);
+        }
+      } catch (err) {
+        console.error('Không thể tải thống kê', err);
+      }
+    };
     loadProfile();
+    loadStats();
   }, []);
 
   const handleLogout = async () => {
@@ -59,8 +80,13 @@ const StudentDashboard = () => {
             assignment={activeLesson} 
             onBack={() => setActiveLesson(null)} 
             onCompleteSuccess={() => {
-              // Có thể reload lại activeLesson hoặc quay ra MyLessons
               setActiveLesson(null);
+              // Tải lại số liệu khi học viên hoàn thành bài học
+              const loadStats = async () => {
+                const res = await StudentService.getDashboardStats();
+                if (res.success) setStats(res.data);
+              };
+              loadStats();
             }}
           />
         );
@@ -71,6 +97,62 @@ const StudentDashboard = () => {
     if (activeTab === 'chat') {
       return <ChatLayout currentUser={{ id: profile?.id, role: 'student', name: profile?.name, email: profile?.email }} />;
     }
+
+    // Màn hình tổng quan mặc định
+    return (
+      <div className="animate-slide-right">
+        <div style={{ marginBottom: '40px' }}>
+          <h1 style={{ fontSize: '32px', color: 'var(--primary)' }}>Trang Tổng Quan Học Tập</h1>
+          <p style={{ fontSize: '15px', color: 'var(--text-secondary)', marginTop: '4px' }}>Chào mừng trở lại, {profile?.name || 'Học viên'}. Hôm nay bạn muốn học gì?</p>
+        </div>
+
+        {/* 3 cột metrics sạch sẽ */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '40px' }}>
+          <div style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '8px', padding: '24px' }}>
+            <div style={{ fontSize: '32px', color: 'var(--primary)', marginBottom: '4px', fontWeight: '700' }}>{stats.totalLessons}</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Tổng Bài Học Được Giao</div>
+          </div>
+          <div style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '8px', padding: '24px' }}>
+            <div style={{ fontSize: '32px', color: 'var(--primary)', marginBottom: '4px', fontWeight: '700' }}>{stats.completedLessons}</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Đã Hoàn Thành</div>
+          </div>
+          <div style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '8px', padding: '24px' }}>
+            <div style={{ fontSize: '32px', color: 'var(--primary)', marginBottom: '4px', fontWeight: '700' }}>{stats.pendingLessons}</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Chờ Hoàn Thành</div>
+          </div>
+        </div>
+
+        {/* Biểu đồ Tiến độ học tập */}
+        <div style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '12px', padding: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <h3 style={{ fontSize: '20px', color: 'var(--primary)', fontWeight: '700', marginBottom: '24px', alignSelf: 'flex-start' }}>Tiến Độ Hoàn Thành Khóa Học</h3>
+          
+          {stats.totalLessons === 0 ? (
+            <div style={{ color: 'var(--text-secondary)', padding: '40px 0' }}>Chưa có bài học nào được giao để thống kê.</div>
+          ) : (
+            <div style={{ width: '100%', height: '300px', maxWidth: '600px', marginTop: '16px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-light)" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'var(--text-secondary)'}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: 'var(--text-secondary)'}} />
+                  <Tooltip 
+                    cursor={{fill: 'rgba(0,0,0,0.02)'}}
+                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
+                  />
+                  <Bar dataKey="value" name="Số bài" radius={[6, 6, 0, 0]} maxBarSize={60}>
+                    {
+                      stats.chartData?.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))
+                    }
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const getSidebarItemStyle = (tabName) => {
@@ -103,6 +185,9 @@ const StudentDashboard = () => {
           {isSidebarOpen ? <>Class<span style={{ color: 'var(--gold)' }}>Live</span></> : 'CL'}
         </div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+          <a onClick={() => { setActiveTab('dashboard'); setActiveLesson(null); }} style={getSidebarItemStyle('dashboard')} onMouseEnter={e => { if(activeTab !== 'dashboard') e.currentTarget.style.background = 'var(--bg)' }} onMouseLeave={e => { if(activeTab !== 'dashboard') e.currentTarget.style.background = 'transparent' }}>
+            <BookOpen size={18} /> {isSidebarOpen && 'Tổng Quan'}
+          </a>
           <a onClick={() => { setActiveTab('lessons'); setActiveLesson(null); }} style={getSidebarItemStyle('lessons')} onMouseEnter={e => { if(activeTab !== 'lessons') e.currentTarget.style.background = 'var(--bg)' }} onMouseLeave={e => { if(activeTab !== 'lessons') e.currentTarget.style.background = 'transparent' }}>
             <BookOpen size={18} /> {isSidebarOpen && 'Khóa Học Của Tôi'}
           </a>

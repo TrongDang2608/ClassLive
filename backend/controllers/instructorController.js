@@ -30,9 +30,13 @@ class InstructorController {
   });
 
   deleteStudent = catchAsync(async (req, res, next) => {
-    const { identifier } = req.params;
-    const result = await instructorService.deleteUser(identifier);
+    const result = await instructorService.deleteStudent(req.params.identifier);
     res.status(200).json(result);
+  });
+
+  getDashboardStats = catchAsync(async (req, res, next) => {
+    const result = await instructorService.getDashboardStats(req.user.id);
+    res.status(200).json({ success: true, data: result });
   });
 
   getProfile = catchAsync(async (req, res, next) => {

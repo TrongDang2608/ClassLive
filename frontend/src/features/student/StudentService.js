@@ -23,6 +23,11 @@ const StudentService = {
   updateProfile: async (profileData) => {
     const response = await axiosClient.put('/student/profile', profileData);
     return response.data;
+  },
+
+  getDashboardStats: async () => {
+    const response = await axiosClient.get('/student/dashboard-stats');
+    return response.data;
   }
 };
 

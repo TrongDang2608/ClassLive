@@ -52,9 +52,39 @@ class StudentService {
     if (!user) {
       throw new AppError('Học viên không tồn tại', 404);
     }
-    // Loại bỏ password
-    const { password, ...safeUser } = user;
-    return safeUser;
+    // Trả về dữ liệu public (ẩn password nếu có)
+    const { password, ...publicProfile } = user;
+    return publicProfile;
+  }
+
+  async getDashboardStats(studentId) {
+    const assignments = await lessonRepository.findAssignmentsByStudent(studentId);
+    
+    const totalLessons = assignments.length;
+    let completedLessons = 0;
+    
+    assignments.forEach(assign => {
+      if (assign.status === 'completed') {
+        completedLessons++;
+      }
+    });
+    
+    const pendingLessons = totalLessons - completedLessons;
+    const progress = totalLessons === 0 ? 0 : Math.round((completedLessons / totalLessons) * 100);
+    
+    // Dữ liệu cho biểu đồ tiến độ học tập
+    const chartData = [
+      { name: 'Đã hoàn thành', value: completedLessons, color: '#D4AF37' },
+      { name: 'Chưa hoàn thành', value: pendingLessons, color: '#f3e5f5' }
+    ];
+    
+    return {
+      totalLessons,
+      completedLessons,
+      pendingLessons,
+      progress,
+      chartData
+    };
   }
 }
 
