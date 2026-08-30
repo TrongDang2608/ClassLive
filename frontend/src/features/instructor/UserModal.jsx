@@ -5,7 +5,6 @@ import toast from 'react-hot-toast';
 const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
   const [formData, setFormData] = useState({
     name: '',
-    username: '',
     phone: '',
     email: '',
     role: 'student'
@@ -16,13 +15,12 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
     if (initialData) {
       setFormData({
         name: initialData.name || '',
-        username: initialData.username || '',
         phone: initialData.phone || '',
         email: initialData.email || '',
         role: initialData.role || 'student'
       });
     } else {
-      setFormData({ name: '', username: '', phone: '', email: '', role: 'student' });
+      setFormData({ name: '', phone: '', email: '', role: 'student' });
     }
   }, [initialData, isOpen]);
 
@@ -89,23 +87,13 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div className="input-group">
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>Username</label>
-              <input 
-                name="username" value={formData.username} onChange={handleChange}
-                style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none', fontSize: '15px' }}
-                placeholder="Ví dụ: nguyenvana123"
-              />
-            </div>
-            <div className="input-group">
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>Số điện thoại *</label>
-              <input 
-                name="phone" value={formData.phone} onChange={handleChange}
-                style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none', fontSize: '15px' }}
-                placeholder="+84..."
-              />
-            </div>
+          <div className="input-group">
+            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>Số điện thoại *</label>
+            <input 
+              name="phone" value={formData.phone} onChange={handleChange}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none', fontSize: '15px' }}
+              placeholder="+84..."
+            />
           </div>
 
           <div className="input-group">
