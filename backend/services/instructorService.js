@@ -3,20 +3,13 @@ const userRepository = require('../repositories/userRepository');
 class InstructorService {
   // 1. Thêm User (Có thể thêm Student hoặc Instructor)
   async addUser(data) {
-    const { name, username, phone, email, role = 'student' } = data;
+    const { name, phone, email, role = 'student' } = data;
 
     if (!name || !phone) {
       throw new Error('Tên và Số điện thoại là bắt buộc.');
     }
 
-    // Kiểm tra xem username, phone, email đã tồn tại chưa
-    if (username) {
-      const existingUsername = await userRepository.findByUsername(username);
-      if (existingUsername) {
-        throw new Error(`Username '${username}' đã được sử dụng.`);
-      }
-    }
-
+    // Kiểm tra xem phone, email đã tồn tại chưa
     const existingPhone = await userRepository.findByPhone(phone);
     if (existingPhone) {
       throw new Error(`Số điện thoại '${phone}' đã được đăng ký.`);
@@ -31,7 +24,7 @@ class InstructorService {
 
     const userData = {
       name,
-      username: username || '',
+      username: '',
       phone,
       email: email || '',
       role,

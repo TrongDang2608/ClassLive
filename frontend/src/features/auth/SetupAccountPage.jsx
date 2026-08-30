@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { UserCheck, ShieldCheck, Zap, Loader2 } from 'lucide-react';
+import { UserCheck, ShieldCheck, Zap, Loader2, XCircle } from 'lucide-react';
 import axiosClient from '../../utils/axiosClient';
 import toast from 'react-hot-toast';
 import './auth.css';
@@ -14,25 +14,11 @@ const SetupAccountPage = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleSetup = async (e) => {
     e.preventDefault();
-
-    if (!token) {
-      toast.error('Đường dẫn thiết lập không hợp lệ hoặc thiếu Token.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      toast.error('Mật khẩu xác nhận không khớp!');
-      return;
-    }
-
-    if (password.length < 6) {
-      toast.error('Mật khẩu phải chứa ít nhất 6 ký tự.');
-      return;
-    }
-
+    setErrorMsg('');
     setLoading(true);
 
     try {
@@ -46,7 +32,7 @@ const SetupAccountPage = () => {
       // Redirect to login page
       navigate('/');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Thiết lập thất bại. Token có thể đã hết hạn.');
+      setErrorMsg(err.response?.data?.error || 'Thiết lập thất bại. Token có thể đã hết hạn.');
     } finally {
       setLoading(false);
     }
@@ -87,6 +73,13 @@ const SetupAccountPage = () => {
           <h2>Thiết lập Tài khoản</h2>
           <p className="subtitle">Tạo tên đăng nhập và mật khẩu của riêng bạn</p>
           
+          {errorMsg && (
+            <div style={{ padding: '12px', background: '#fee2e2', color: '#ef4444', borderRadius: '8px', marginBottom: '16px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <XCircle size={18} />
+              {errorMsg}
+            </div>
+          )}
+
           <form onSubmit={handleSetup}>
             <div className="form-group">
               <label>Tên đăng nhập (Username)</label>
