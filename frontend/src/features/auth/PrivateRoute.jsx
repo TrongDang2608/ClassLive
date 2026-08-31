@@ -14,7 +14,9 @@ const PrivateRoute = ({ children, requiredRole }) => {
   // Nếu có truyền requiredRole mà role không khớp -> cấm truy cập
   if (requiredRole && role !== requiredRole) {
     // Chuyển hướng về đúng dashboard của role đó
-    if (role === 'instructor') {
+    if (role === 'admin') {
+      return <Navigate to="/admin" replace />;
+    } else if (role === 'instructor') {
       return <Navigate to="/instructor" replace />;
     } else if (role === 'student') {
       return <Navigate to="/student" replace />;

@@ -5,6 +5,7 @@ import OtpPage from './features/auth/OtpPage';
 import SetupAccountPage from './features/auth/SetupAccountPage';
 import StudentDashboard from './features/student/StudentDashboard';
 import InstructorDashboard from './features/instructor/InstructorDashboard';
+import AdminDashboard from './features/admin/AdminDashboard';
 import PrivateRoute from './features/auth/PrivateRoute';
 
 function App() {
@@ -20,6 +21,14 @@ function App() {
         <Route path="/setup-account" element={<SetupAccountPage />} />
         
         {/* Dashboard Routes (Protected) */}
+        <Route 
+          path="/admin" 
+          element={
+            <PrivateRoute requiredRole="admin">
+              <AdminDashboard />
+            </PrivateRoute>
+          } 
+        />
         <Route 
           path="/student" 
           element={
@@ -42,3 +51,4 @@ function App() {
 }
 
 export default App;
+

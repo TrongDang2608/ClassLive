@@ -78,7 +78,9 @@ const OtpPage = () => {
       localStorage.setItem('role', response.role);
       
       // Navigate based on role
-      if (response.role === 'instructor') {
+      if (response.role === 'admin') {
+        navigate('/admin');
+      } else if (response.role === 'instructor') {
         navigate('/instructor');
       } else {
         navigate('/student');
