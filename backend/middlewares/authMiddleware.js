@@ -34,3 +34,15 @@ exports.requireStudent = (req, res, next) => {
   }
   next();
 };
+
+// Hàm đa phân quyền mới (Dành cho mô hình 4 Roles)
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ 
+        error: `Bạn không có quyền truy cập. Yêu cầu Role: ${roles.join(' hoặc ')}` 
+      });
+    }
+    next();
+  };
+};
