@@ -9,7 +9,6 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import { Toaster } from 'react-hot-toast';
 import AuthService from '../auth/AuthService';
 import InstructorService from './InstructorService';
-import UserManagement from './UserManagement';
 import LessonManagement from './LessonManagement';
 import ChatLayout from '../chat/ChatLayout';
 import '../auth/auth.css'; // Reuse CSS vars
@@ -68,10 +67,6 @@ const InstructorDashboard = () => {
   };
 
   const renderContent = () => {
-    if (activeTab === 'users') {
-      return <UserManagement />;
-    }
-    
     if (activeTab === 'lessons') {
       return <LessonManagement />;
     }
@@ -152,8 +147,7 @@ const InstructorDashboard = () => {
           {/* Học viên mới đăng ký */}
           <div style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '18px', color: 'var(--primary)', fontWeight: '700' }}>Học Viên Mới Đăng Ký</h3>
-              <button onClick={() => setActiveTab('users')} className="btn btn-gold" style={{ padding: '6px 12px', fontSize: '13px' }}>Quản lý</button>
+              <h3 style={{ fontSize: '18px', color: 'var(--primary)', fontWeight: '700' }}>Học Viên Gần Đây</h3>
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -214,9 +208,6 @@ const InstructorDashboard = () => {
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
           <a onClick={() => setActiveTab('dashboard')} style={getSidebarItemStyle('dashboard')} onMouseEnter={e => { if(activeTab !== 'dashboard') e.currentTarget.style.background = 'var(--bg)' }} onMouseLeave={e => { if(activeTab !== 'dashboard') e.currentTarget.style.background = 'transparent' }}>
             <LayoutDashboard size={18} /> {isSidebarOpen && 'Tổng quan'}
-          </a>
-          <a onClick={() => setActiveTab('users')} style={getSidebarItemStyle('users')} onMouseEnter={e => { if(activeTab !== 'users') e.currentTarget.style.background = 'var(--bg)' }} onMouseLeave={e => { if(activeTab !== 'users') e.currentTarget.style.background = 'transparent' }}>
-            <Users size={18} /> {isSidebarOpen && 'Quản lý Học viên'}
           </a>
           <a onClick={() => setActiveTab('lessons')} style={getSidebarItemStyle('lessons')} onMouseEnter={e => { if(activeTab !== 'lessons') e.currentTarget.style.background = 'var(--bg)' }} onMouseLeave={e => { if(activeTab !== 'lessons') e.currentTarget.style.background = 'transparent' }}>
             <BookOpen size={18} /> {isSidebarOpen && 'Chương Trình Học'}
