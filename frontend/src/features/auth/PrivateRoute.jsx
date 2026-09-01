@@ -18,6 +18,8 @@ const PrivateRoute = ({ children, requiredRole }) => {
       return <Navigate to="/admin" replace />;
     } else if (role === 'tenant_admin') {
       return <Navigate to="/tenant" replace />;
+    } else if (role === 'school_admin') {
+      return <Navigate to="/school-admin" replace />;
     } else if (role === 'instructor') {
       return <Navigate to="/instructor" replace />;
     } else if (role === 'student') {

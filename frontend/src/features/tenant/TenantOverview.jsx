@@ -13,16 +13,8 @@ const TenantOverview = ({ onNavigateTab, onCreateLesson }) => {
   const [recentLessons, setRecentLessons] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Mock trend data for Line Chart
-  const trendData = [
-    { month: 'T1', lessons: 2, assignments: 5 },
-    { month: 'T2', lessons: 4, assignments: 8 },
-    { month: 'T3', lessons: 7, assignments: 14 },
-    { month: 'T4', lessons: 9, assignments: 20 },
-    { month: 'T5', lessons: 12, assignments: 28 },
-    { month: 'T6', lessons: 15, assignments: 35 },
-    { month: 'T7', lessons: 18, assignments: 42 },
-  ];
+  // Dữ liệu biểu đồ xu hướng thực tế từ Firestore backend
+  const trendData = stats.trendData || [];
 
   useEffect(() => {
     fetchDashboardData();
