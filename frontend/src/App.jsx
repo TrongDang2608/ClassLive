@@ -4,7 +4,6 @@ import LoginPage from './features/auth/LoginPage';
 import OtpPage from './features/auth/OtpPage';
 import SetupAccountPage from './features/auth/SetupAccountPage';
 import StudentDashboard from './features/student/StudentDashboard';
-import InstructorDashboard from './features/instructor/InstructorDashboard';
 import AdminDashboard from './features/admin/AdminDashboard';
 import TenantDashboard from './features/tenant/TenantDashboard';
 import SchoolDashboard from './features/school/SchoolDashboard';
@@ -67,14 +66,6 @@ function App() {
           element={
             <PrivateRoute requiredRole="student">
               <StudentDashboard />
-            </PrivateRoute>
-          } 
-        />
-        <Route 
-          path="/instructor" 
-          element={
-            <PrivateRoute requiredRole="instructor">
-              <InstructorDashboard />
             </PrivateRoute>
           } 
         />
