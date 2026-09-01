@@ -33,13 +33,45 @@ class SchoolService {
     // 2. Số Giáo viên trong trường
     const totalTeachers = await userRepository.countTeachersBySchool(schoolAdminId);
 
-    // 3. Tổng lượt phân bổ cho Giáo viên
-    const totalTeacherAssignments = await teacherAssignmentRepository.countBySchoolAdminId(schoolAdminId);
+    // 3. Các lượt phân bổ cho Giáo viên
+    const teacherAssignments = await teacherAssignmentRepository.findBySchoolAdminId(schoolAdminId);
+    const totalTeacherAssignments = teacherAssignments.length;
+
+    // 4. Tính toán xu hướng biểu đồ thực tế 6 tháng gần nhất
+    const now = new Date();
+    const trendData = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const monthLabel = `Tháng ${month + 1}`;
+
+      const startOfMonth = new Date(year, month, 1).getTime();
+      const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999).getTime();
+
+      const lessonsCount = assignments.filter(a => {
+        const t = typeof a.assignedAt === 'number' ? a.assignedAt : new Date(a.assignedAt || 0).getTime();
+        return t >= startOfMonth && t <= endOfMonth;
+      }).length;
+
+      const assignmentsCount = teacherAssignments.filter(a => {
+        const t = typeof a.assignedAt === 'number' ? a.assignedAt : new Date(a.assignedAt || 0).getTime();
+        return t >= startOfMonth && t <= endOfMonth;
+      }).length;
+
+      trendData.push({
+        month: monthLabel,
+        lessons: lessonsCount,
+        assignments: assignmentsCount
+      });
+    }
 
     return {
       totalLessons,
       totalTeachers,
-      totalTeacherAssignments
+      totalTeacherAssignments,
+      trendData
     };
   }
 

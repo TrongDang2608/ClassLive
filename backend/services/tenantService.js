@@ -17,14 +17,46 @@ class TenantService {
   async getDashboardStats(tenantAdminId) {
     const totalLessons = await lessonRepository.countLessonsByInstructor(tenantAdminId);
     const assignments = await assignmentRepository.findByTenantAdminId(tenantAdminId);
+    const allLessons = await lessonRepository.findLessonsByInstructor(tenantAdminId, 1, 1000);
     
     // Đếm số lượng School Admin duy nhất đã được cấp quyền
     const uniqueSchoolAdmins = new Set(assignments.map(a => a.schoolAdminId));
 
+    // 4. Tính toán xu hướng biểu đồ thực tế 6 tháng gần nhất
+    const now = new Date();
+    const trendData = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const monthLabel = `Tháng ${month + 1}`;
+
+      const startOfMonth = new Date(year, month, 1).getTime();
+      const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999).getTime();
+
+      const lessonsCount = allLessons.filter(l => {
+        const t = typeof l.createdAt === 'number' ? l.createdAt : new Date(l.createdAt || 0).getTime();
+        return t >= startOfMonth && t <= endOfMonth;
+      }).length;
+
+      const assignmentsCount = assignments.filter(a => {
+        const t = typeof a.assignedAt === 'number' ? a.assignedAt : new Date(a.assignedAt || 0).getTime();
+        return t >= startOfMonth && t <= endOfMonth;
+      }).length;
+
+      trendData.push({
+        month: monthLabel,
+        lessons: lessonsCount,
+        assignments: assignmentsCount
+      });
+    }
+
     return {
       totalLessons,
       totalAssignedSchools: uniqueSchoolAdmins.size,
-      totalAssignments: assignments.length
+      totalAssignments: assignments.length,
+      trendData
     };
   }
 
