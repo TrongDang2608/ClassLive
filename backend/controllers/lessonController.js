@@ -138,16 +138,3 @@ exports.deleteLesson = catchAsync(async (req, res) => {
     message: 'Đã xóa bài giảng'
   });
 });
-
-exports.assignLesson = catchAsync(async (req, res) => {
-  const instructorId = req.user.id;
-  const lessonId = req.params.id;
-  const { studentIds } = req.body;
-
-  const assignedCount = await lessonService.assignLessonToStudents(lessonId, instructorId, studentIds);
-
-  res.status(200).json({
-    success: true,
-    message: `Đã giao bài giảng thành công cho ${assignedCount} học sinh`
-  });
-});
