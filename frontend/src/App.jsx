@@ -6,11 +6,27 @@ import SetupAccountPage from './features/auth/SetupAccountPage';
 import StudentDashboard from './features/student/StudentDashboard';
 import InstructorDashboard from './features/instructor/InstructorDashboard';
 import AdminDashboard from './features/admin/AdminDashboard';
+import TenantDashboard from './features/tenant/TenantDashboard';
+import { Toaster } from 'react-hot-toast';
 import PrivateRoute from './features/auth/PrivateRoute';
 
 function App() {
   return (
     <BrowserRouter>
+      <Toaster 
+        position="top-right" 
+        toastOptions={{
+          duration: 3500,
+          style: {
+            borderRadius: '10px',
+            background: '#ffffff',
+            color: '#1B4D3E',
+            fontWeight: '500',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            border: '1px solid rgba(27, 77, 62, 0.15)'
+          }
+        }} 
+      />
       <Routes>
         {/* Redirect root to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
@@ -26,6 +42,14 @@ function App() {
           element={
             <PrivateRoute requiredRole="admin">
               <AdminDashboard />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/tenant" 
+          element={
+            <PrivateRoute requiredRole="tenant_admin">
+              <TenantDashboard />
             </PrivateRoute>
           } 
         />

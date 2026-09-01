@@ -80,6 +80,8 @@ const OtpPage = () => {
       // Navigate based on role
       if (response.role === 'admin') {
         navigate('/admin');
+      } else if (response.role === 'tenant_admin') {
+        navigate('/tenant');
       } else if (response.role === 'instructor') {
         navigate('/instructor');
       } else {
