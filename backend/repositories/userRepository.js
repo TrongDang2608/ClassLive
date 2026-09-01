@@ -66,11 +66,13 @@ class UserRepository {
       query = query.where('role', '==', roleFilter);
     }
     
-    const offset = (page - 1) * limit;
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const offset = (pageNum - 1) * limitNum;
     if (offset > 0) {
       query = query.offset(offset);
     }
-    query = query.limit(limit);
+    query = query.limit(limitNum);
 
     const snapshot = await query.get();
     if (snapshot.empty) return [];
@@ -91,11 +93,13 @@ class UserRepository {
       .where('role', '==', 'teacher')
       .where('createdBy', '==', schoolAdminId);
 
-    const offset = (page - 1) * limit;
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const offset = (pageNum - 1) * limitNum;
     if (offset > 0) {
       query = query.offset(offset);
     }
-    query = query.limit(limit);
+    query = query.limit(limitNum);
 
     const snapshot = await query.get();
     if (snapshot.empty) return [];

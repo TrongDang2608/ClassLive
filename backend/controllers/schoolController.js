@@ -26,7 +26,12 @@ class SchoolController {
     const schoolAdminId = req.user.id;
     const { page = 1, limit = 10, subject, grade, search } = req.query;
 
-    const result = await schoolService.getAssignedLessons(schoolAdminId, page, limit, { subject, grade, search });
+    const result = await schoolService.getAssignedLessons(
+      schoolAdminId, 
+      parseInt(page, 10) || 1, 
+      parseInt(limit, 10) || 10, 
+      { subject, grade, search }
+    );
     res.status(200).json({
       success: true,
       data: result.lessons,
@@ -50,7 +55,12 @@ class SchoolController {
     const schoolAdminId = req.user.id;
     const { page = 1, limit = 10, search } = req.query;
 
-    const result = await schoolService.getTeachers(schoolAdminId, page, limit, search);
+    const result = await schoolService.getTeachers(
+      schoolAdminId, 
+      parseInt(page, 10) || 1, 
+      parseInt(limit, 10) || 10, 
+      search
+    );
     res.status(200).json({
       success: true,
       data: result.teachers,
