@@ -15,6 +15,10 @@ class LessonRepository {
     return new Lesson(doc.id, doc.data());
   }
 
+  async findById(id) {
+    return this.findLessonById(id);
+  }
+
   async findLessonsByInstructor(instructorId, page = 1, limit = 10) {
     let query = this.lessonsCollection.where('createdBy', '==', instructorId);
     

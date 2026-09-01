@@ -46,10 +46,12 @@ const instructorRoutes = require('./routes/instructorRoutes');
 const lessonRoutes = require('./routes/lessonRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const schoolRoutes = require('./routes/schoolRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/tenant', tenantRoutes);
+app.use('/api/school', schoolRoutes);
 app.use('/api/instructor', instructorRoutes);
 app.use('/api/lessons', lessonRoutes);
 app.use('/api/student', studentRoutes);

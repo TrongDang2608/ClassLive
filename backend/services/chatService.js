@@ -77,6 +77,18 @@ class ChatService {
         const data = doc.data();
         if (data.tenantAdminId) contactIds.add(data.tenantAdminId);
       });
+      // Lấy các Giáo viên thuộc trường này
+      const teachersSnap = await db.collection('users')
+        .where('role', '==', 'teacher')
+        .where('createdBy', '==', userId)
+        .get();
+      teachersSnap.docs.forEach(doc => contactIds.add(doc.id));
+    } else if (role === 'teacher') {
+      // Lấy School Admin đã tạo ra giáo viên này
+      const userDoc = await db.collection('users').doc(userId).get();
+      if (userDoc.exists && userDoc.data().createdBy) {
+        contactIds.add(userDoc.data().createdBy);
+      }
     }
 
     if (contactIds.size === 0) return [];
