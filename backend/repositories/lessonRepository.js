@@ -1,12 +1,11 @@
 const { getFirestore } = require('firebase-admin/firestore');
 const Lesson = require('../models/Lesson');
-const Assignment = require('../models/Assignment');
+const assignmentRepository = require('./assignmentRepository');
 
 class LessonRepository {
   constructor() {
     this.db = getFirestore();
     this.lessonsCollection = this.db.collection('lessons');
-    this.assignmentsCollection = this.db.collection('assignments');
   }
 
   // === LESSON CRUD ===
@@ -49,47 +48,7 @@ class LessonRepository {
     await this.lessonsCollection.doc(id).delete();
 
     // 2. Cascade delete: Xóa các assignment liên quan tới bài giảng này
-    const snapshot = await this.assignmentsCollection.where('lessonId', '==', id).get();
-    if (!snapshot.empty) {
-      const batch = this.db.batch();
-      snapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-      });
-      await batch.commit();
-    }
-  }
-
-  // === ASSIGNMENT CRUD ===
-  async assignToStudents(assignmentsList) {
-    const batch = this.db.batch();
-    
-    assignmentsList.forEach(assign => {
-      // Dùng ref tự sinh ID
-      const docRef = this.assignmentsCollection.doc();
-      batch.set(docRef, assign);
-    });
-
-    await batch.commit();
-  }
-
-  async findAssignmentById(id) {
-    const doc = await this.assignmentsCollection.doc(id).get();
-    if (!doc.exists) return null;
-    return new Assignment(doc.id, doc.data());
-  }
-
-  async findAssignmentsByStudent(studentId) {
-    const snapshot = await this.assignmentsCollection.where('studentId', '==', studentId).get();
-    if (snapshot.empty) return [];
-    return snapshot.docs.map(doc => new Assignment(doc.id, doc.data()));
-  }
-
-  async updateAssignmentStatus(assignmentId, status, completedAt = null) {
-    const data = { status };
-    if (completedAt !== undefined) {
-      data.completedAt = completedAt;
-    }
-    await this.assignmentsCollection.doc(assignmentId).update(data);
+    await assignmentRepository.deleteByLessonId(id);
   }
 }
 

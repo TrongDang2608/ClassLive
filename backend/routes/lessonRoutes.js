@@ -43,9 +43,4 @@ router.put('/:id', upload.any(), lessonController.updateLesson);
 // Xóa bài học
 router.delete('/:id', lessonController.deleteLesson);
 
-// === ROUTES GIAO BÀI (ASSIGNMENT) ===
-
-// Giao bài học cho danh sách học viên
-router.post('/:id/assign', lessonController.assignLesson);
-
 module.exports = router;
