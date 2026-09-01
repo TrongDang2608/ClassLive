@@ -97,7 +97,7 @@ const ChatLayout = ({ currentUser }) => {
   );
 
   return (
-    <div className="animate-fade-in" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', height: 'calc(100vh - 100px)', background: 'var(--white)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+    <div className="animate-fade-in" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', height: '100%', width: '100%', background: 'var(--white)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
       
       {/* Cột trái: Danh bạ */}
       <div style={{ borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', background: 'var(--bg-warm)' }}>

@@ -59,6 +59,24 @@ class ChatService {
           }
         });
       }
+    } else if (role === 'tenant_admin') {
+      // Lấy các school admin đã được Tenant Admin này giao bài
+      const assignmentsSnap = await db.collection('assignments')
+        .where('tenantAdminId', '==', userId)
+        .get();
+      assignmentsSnap.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.schoolAdminId) contactIds.add(data.schoolAdminId);
+      });
+    } else if (role === 'school_admin') {
+      // Lấy các tenant admin đã giao bài cho school admin này
+      const assignmentsSnap = await db.collection('assignments')
+        .where('schoolAdminId', '==', userId)
+        .get();
+      assignmentsSnap.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.tenantAdminId) contactIds.add(data.tenantAdminId);
+      });
     }
 
     if (contactIds.size === 0) return [];

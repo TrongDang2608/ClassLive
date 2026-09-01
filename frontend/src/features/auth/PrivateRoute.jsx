@@ -16,6 +16,8 @@ const PrivateRoute = ({ children, requiredRole }) => {
     // Chuyển hướng về đúng dashboard của role đó
     if (role === 'admin') {
       return <Navigate to="/admin" replace />;
+    } else if (role === 'tenant_admin') {
+      return <Navigate to="/tenant" replace />;
     } else if (role === 'instructor') {
       return <Navigate to="/instructor" replace />;
     } else if (role === 'student') {
