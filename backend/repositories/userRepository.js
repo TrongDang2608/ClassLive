@@ -86,6 +86,31 @@ class UserRepository {
     return snapshot.data().count;
   }
 
+  async findTeachersBySchool(schoolAdminId, page = 1, limit = 10) {
+    let query = this.collection
+      .where('role', '==', 'teacher')
+      .where('createdBy', '==', schoolAdminId);
+
+    const offset = (page - 1) * limit;
+    if (offset > 0) {
+      query = query.offset(offset);
+    }
+    query = query.limit(limit);
+
+    const snapshot = await query.get();
+    if (snapshot.empty) return [];
+    return snapshot.docs.map(doc => new User(doc.id, doc.data()));
+  }
+
+  async countTeachersBySchool(schoolAdminId) {
+    const snapshot = await this.collection
+      .where('role', '==', 'teacher')
+      .where('createdBy', '==', schoolAdminId)
+      .count()
+      .get();
+    return snapshot.data().count;
+  }
+
   async create(userData) {
     // Firebase tự sinh ID nếu dùng add()
     const docRef = await this.collection.add(userData);

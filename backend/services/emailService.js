@@ -56,6 +56,29 @@ class EmailService {
       return false; // Tránh quăng lỗi ra ngoài làm sập luồng chính (chỉ ghi log)
     }
   }
+
+  async sendOtpEmail(toEmail, code) {
+    const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.BREVO_SMTP_USER;
+    const mailOptions = {
+      from: `"ClassLive System" <${senderEmail}>`,
+      to: toEmail,
+      subject: '🔑 Mã xác thực OTP của bạn - ClassLive',
+      html: `<div style="font-family: sans-serif; padding: 20px;"><h3>Mã OTP của bạn là: <strong>${code}</strong></h3><p>Mã có hiệu lực trong 5 phút.</p></div>`
+    };
+    try {
+      if (this.transporter && process.env.BREVO_SMTP_USER) {
+        await this.transporter.sendMail(mailOptions);
+      }
+      return true;
+    } catch (err) {
+      console.error('Error sending OTP email:', err.message);
+      return false;
+    }
+  }
+
+  async sendSetupEmail(toEmail, userId, fullName) {
+    return this.sendSetupAccountEmail(toEmail, fullName, userId);
+  }
 }
 
 module.exports = new EmailService();
