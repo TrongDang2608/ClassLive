@@ -7,6 +7,7 @@ import StudentDashboard from './features/student/StudentDashboard';
 import AdminDashboard from './features/admin/AdminDashboard';
 import TenantDashboard from './features/tenant/TenantDashboard';
 import SchoolDashboard from './features/school/SchoolDashboard';
+import TeacherDashboard from './features/teacher/TeacherDashboard';
 import { Toaster } from 'react-hot-toast';
 import PrivateRoute from './features/auth/PrivateRoute';
 
@@ -60,6 +61,18 @@ function App() {
               <SchoolDashboard />
             </PrivateRoute>
           } 
+        />
+        <Route 
+          path="/teacher" 
+          element={
+            <PrivateRoute requiredRole="instructor">
+              <TeacherDashboard />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/instructor" 
+          element={<Navigate to="/teacher" replace />} 
         />
         <Route 
           path="/student" 

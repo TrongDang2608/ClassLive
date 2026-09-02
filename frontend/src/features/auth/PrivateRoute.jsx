@@ -11,8 +11,14 @@ const PrivateRoute = ({ children, requiredRole }) => {
     return <Navigate to="/login" replace />;
   }
 
+  // Chuẩn hóa role kiểm tra (Hỗ trợ cả 'instructor' và 'teacher')
+  const isTeacherRole = (r) => r === 'instructor' || r === 'teacher';
+  const isTeacherRequired = requiredRole === 'instructor' || requiredRole === 'teacher';
+
+  const isRoleMatch = isTeacherRequired ? isTeacherRole(role) : role === requiredRole;
+
   // Nếu có truyền requiredRole mà role không khớp -> cấm truy cập
-  if (requiredRole && role !== requiredRole) {
+  if (requiredRole && !isRoleMatch) {
     // Chuyển hướng về đúng dashboard của role đó
     if (role === 'admin') {
       return <Navigate to="/admin" replace />;
@@ -20,8 +26,8 @@ const PrivateRoute = ({ children, requiredRole }) => {
       return <Navigate to="/tenant" replace />;
     } else if (role === 'school_admin') {
       return <Navigate to="/school-admin" replace />;
-    } else if (role === 'instructor') {
-      return <Navigate to="/instructor" replace />;
+    } else if (isTeacherRole(role)) {
+      return <Navigate to="/teacher" replace />;
     } else if (role === 'student') {
       return <Navigate to="/student" replace />;
     } else {
