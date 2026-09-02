@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, UserCheck, Trash2 } from 'lucide-react';
 import SchoolService from './SchoolService';
 import toast from 'react-hot-toast';
@@ -29,16 +30,16 @@ const SchoolAssignmentListModal = ({ isOpen, onClose, lesson, onRevokeSuccess })
   };
 
   const handleRevoke = async (assignmentId, teacherName) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn thu hồi quyền truy cập bài giảng của Giáo viên ${teacherName}?`)) {
+    if (!window.confirm(`Bạn có chắc chắn muốn thu hồi quyền truy cập học liệu của giáo viên "${teacherName}" không?`)) {
       return;
     }
 
     try {
       setRevokingId(assignmentId);
-      const res = await SchoolService.revokeTeacherAssignment(assignmentId);
+      const res = await SchoolService.revokeLessonAssignment(assignmentId);
       if (res.success) {
-        toast.success(res.message || 'Đã thu hồi quyền thành công!');
-        setAssignments(assignments.filter(a => a.assignmentId !== assignmentId));
+        toast.success(res.message || 'Thu hồi quyền thành công!');
+        setAssignments(prev => prev.filter(a => a.id !== assignmentId));
         if (onRevokeSuccess) onRevokeSuccess();
       }
     } catch (err) {
@@ -57,7 +58,7 @@ const SchoolAssignmentListModal = ({ isOpen, onClose, lesson, onRevokeSuccess })
     });
   };
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div 
         className="modal-dialog" 
@@ -132,13 +133,14 @@ const SchoolAssignmentListModal = ({ isOpen, onClose, lesson, onRevokeSuccess })
 
           {/* FOOTER */}
           <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose} style={{ padding: '8px 24px' }}>
+            <button type="button" className="btn btn-outline-secondary" onClick={onClose} style={{ padding: '8px 24px' }}>
               Đóng
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

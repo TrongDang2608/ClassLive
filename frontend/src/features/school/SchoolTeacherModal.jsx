@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, User, Mail, Phone } from 'lucide-react';
 import SchoolService from './SchoolService';
 import toast from 'react-hot-toast';
@@ -57,11 +58,11 @@ const SchoolTeacherModal = ({ isOpen, onClose, teacher, onSuccess }) => {
     }
   };
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div 
         className="modal-dialog" 
-        style={{ maxWidth: '520px' }}
+        style={{ maxWidth: '560px', margin: 'auto' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-content">
@@ -161,7 +162,12 @@ const SchoolTeacherModal = ({ isOpen, onClose, teacher, onSuccess }) => {
 
             {/* FOOTER */}
             <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" onClick={onClose} disabled={submitting}>
+              <button 
+                type="button" 
+                className="btn btn-outline-secondary" 
+                onClick={onClose}
+                disabled={submitting}
+              >
                 Hủy
               </button>
               <button 
@@ -175,7 +181,8 @@ const SchoolTeacherModal = ({ isOpen, onClose, teacher, onSuccess }) => {
           </form>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
