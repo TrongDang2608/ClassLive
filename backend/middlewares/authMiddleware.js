@@ -22,8 +22,8 @@ exports.verifyToken = (req, res, next) => {
 };
 
 exports.requireInstructor = (req, res, next) => {
-  if (!req.user || req.user.role !== 'instructor') {
-    return res.status(403).json({ error: 'Chỉ Giảng viên mới có quyền thực hiện hành động này' });
+  if (!req.user || (req.user.role !== 'instructor' && req.user.role !== 'teacher')) {
+    return res.status(403).json({ error: 'Chỉ Giảng viên / Giáo viên mới có quyền thực hiện hành động này' });
   }
   next();
 };
