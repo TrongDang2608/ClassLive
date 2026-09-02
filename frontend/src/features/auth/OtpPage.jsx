@@ -84,8 +84,8 @@ const OtpPage = () => {
         navigate('/tenant');
       } else if (response.role === 'school_admin') {
         navigate('/school-admin');
-      } else if (response.role === 'instructor') {
-        navigate('/instructor');
+      } else if (response.role === 'instructor' || response.role === 'teacher') {
+        navigate('/teacher');
       } else {
         navigate('/student');
       }
