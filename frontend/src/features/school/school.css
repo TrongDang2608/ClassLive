@@ -491,40 +491,42 @@
   border-bottom: none;
 }
 
-/* === MODAL STYLES === */
+/* === MODAL STYLES (IMAGE 1 STANDARD) === */
 .modal-overlay, .modal.show {
   position: fixed;
   inset: 0;
-  background: rgba(35, 12, 59, 0.65);
-  backdrop-filter: blur(4px);
+  background: rgba(35, 12, 59, 0.45);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1050;
-  padding: 20px;
+  z-index: 9999;
+  padding: 24px;
 }
 
 .modal-dialog {
   width: 100%;
-  max-width: 620px;
-  margin: 0 auto;
+  max-width: 740px;
+  margin: auto;
 }
 
 .modal-content {
   background: #FFFFFF;
-  border-radius: 16px;
+  border-radius: 24px;
   border: 1px solid var(--school-border);
-  box-shadow: 0 16px 48px rgba(35, 12, 59, 0.2);
+  box-shadow: 0 25px 50px -12px rgba(35, 12, 59, 0.25);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  max-height: 90vh;
+  animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .modal-header {
-  padding: 20px 24px;
-  background: linear-gradient(135deg, #3B185F 0%, #5A2A8C 100%);
-  border-bottom: 1px solid rgba(212, 175, 55, 0.3);
-  color: #FFFFFF;
+  padding: 20px 28px;
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--school-border);
+  color: var(--school-primary);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -532,42 +534,47 @@
 
 .modal-title {
   margin: 0;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--school-primary);
 }
 
-.btn-close, .btn-close-white {
-  background: transparent;
-  border: none;
-  color: #FFFFFF;
-  font-size: 20px;
-  cursor: pointer;
-  opacity: 0.8;
-  padding: 4px;
+.btn-close, .btn-close-white, .btn-close-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--school-border);
+  background: #FFFFFF;
+  color: #6B7280;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 18px;
 }
 
-.btn-close:hover, .btn-close-white:hover {
-  opacity: 1;
+.btn-close:hover, .btn-close-white:hover, .btn-close-circle:hover {
+  background: #F3F4F6;
+  color: var(--school-primary);
+  border-color: var(--school-primary);
 }
 
 .modal-body {
-  padding: 24px;
+  padding: 28px;
   max-height: 75vh;
   overflow-y: auto;
+  background: #FFFFFF;
 }
 
 .modal-footer {
-  padding: 16px 24px;
-  background: #F8F6FA;
+  padding: 18px 28px;
   border-top: 1px solid var(--school-border);
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
+  background: #F8F6FA;
 }
 
 .form-check-input {

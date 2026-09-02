@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Share2, Search } from 'lucide-react';
 import SchoolService from './SchoolService';
 import toast from 'react-hot-toast';
@@ -62,9 +63,9 @@ const SchoolAssignModal = ({ isOpen, onClose, lesson, onSuccess }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (selectedTeacherIds.length === 0) {
-      toast.error('Vui lòng chọn ít nhất một Giáo viên để cấp quyền.');
+      toast.error('Vui lòng chọn ít nhất 1 giáo viên.');
       return;
     }
 
@@ -72,7 +73,7 @@ const SchoolAssignModal = ({ isOpen, onClose, lesson, onSuccess }) => {
       setSubmitting(true);
       const res = await SchoolService.assignLessonToTeachers(lesson.id, selectedTeacherIds);
       if (res.success) {
-        toast.success(res.message || 'Đã phân bổ học liệu thành công!');
+        toast.success(res.message || 'Cấp quyền bài giảng cho giáo viên thành công!');
         if (onSuccess) onSuccess();
         onClose();
       }
@@ -91,7 +92,7 @@ const SchoolAssignModal = ({ isOpen, onClose, lesson, onSuccess }) => {
     t.phone?.includes(search)
   );
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div 
         className="modal-dialog" 
@@ -197,7 +198,7 @@ const SchoolAssignModal = ({ isOpen, onClose, lesson, onSuccess }) => {
               Đã chọn: <strong style={{ color: '#3B185F' }}>{selectedTeacherIds.length}</strong> Giáo viên
             </span>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button type="button" className="btn btn-secondary" onClick={onClose} disabled={submitting}>
+              <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={submitting}>
                 Hủy
               </button>
               <button 
@@ -212,7 +213,8 @@ const SchoolAssignModal = ({ isOpen, onClose, lesson, onSuccess }) => {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

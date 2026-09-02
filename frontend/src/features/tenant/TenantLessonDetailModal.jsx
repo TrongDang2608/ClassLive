@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, BookOpen, Calendar, Tag, FileText, Download, Eye, ExternalLink } from 'lucide-react';
 import './tenant.css';
 
@@ -24,27 +25,27 @@ const TenantLessonDetailModal = ({ isOpen, onClose, lesson }) => {
   const isPdf = (url) => url?.toLowerCase().endsWith('.pdf');
   const isImage = (url) => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url || '');
 
-  return (
+  return createPortal(
     <div className="tenant-modal-overlay animate-fade-in" onClick={onClose}>
       <div 
-        className="tenant-modal-card animate-slide-right" 
-        style={{ maxWidth: '850px', maxHeight: '90vh' }}
+        className="tenant-modal-card" 
+        style={{ maxWidth: '750px', maxHeight: '90vh', margin: 'auto' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="tenant-modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className="tenant-stat-icon" style={{ width: '40px', height: '40px' }}>
+            <div className="tenant-stat-icon" style={{ width: '38px', height: '38px' }}>
               <BookOpen size={20} />
             </div>
             <div>
-              <h2 style={{ fontSize: '18px', color: 'var(--tenant-primary)', margin: 0 }}>Chi tiết Học liệu</h2>
+              <h2 style={{ fontSize: '18px', color: 'var(--tenant-primary)', margin: 0, fontWeight: 700 }}>Chi Tiết Học Liệu</h2>
               <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>ID: {lesson.id}</span>
             </div>
           </div>
           <button 
-            className="btn-emerald-outline" 
-            style={{ padding: '6px', borderRadius: '50%' }}
+            className="btn-close-circle"
             onClick={onClose}
+            title="Đóng"
           >
             <X size={18} />
           </button>
@@ -199,7 +200,8 @@ const TenantLessonDetailModal = ({ isOpen, onClose, lesson }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

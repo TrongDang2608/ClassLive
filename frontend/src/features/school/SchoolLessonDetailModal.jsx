@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, BookOpen, Calendar, FileText, Download, Eye, ExternalLink } from 'lucide-react';
 
 const SchoolLessonDetailModal = ({ isOpen, onClose, lesson }) => {
@@ -23,7 +24,7 @@ const SchoolLessonDetailModal = ({ isOpen, onClose, lesson }) => {
   const isPdf = (url) => url?.toLowerCase().endsWith('.pdf');
   const isImage = (url) => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url || '');
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div 
         className="modal-dialog" 
@@ -177,13 +178,14 @@ const SchoolLessonDetailModal = ({ isOpen, onClose, lesson }) => {
 
           {/* FOOTER */}
           <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose} style={{ padding: '8px 24px' }}>
+            <button type="button" className="btn btn-outline-secondary" onClick={onClose} style={{ padding: '8px 24px' }}>
               Đóng
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Users, Trash2, Loader2, School, ShieldAlert, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import TenantService from './TenantService';
@@ -18,25 +19,21 @@ const TenantAssignmentListModal = ({ isOpen, onClose, lesson, onRevokeSuccess })
   const fetchAssignments = async () => {
     setFetching(true);
     try {
-      const res = await TenantService.getLessonAssignments(lesson.id);
-      setAssignments(res.data || []);
+      const data = await TenantService.getLessonAssignments(lesson.id);
+      setAssignments(data || []);
     } catch (error) {
-      toast.error('Không thể lấy danh sách quyền đã cấp.');
+      console.error('Lỗi lấy danh sách cấp quyền:', error);
+      toast.error('Không thể lấy danh sách đơn vị được cấp quyền.');
     } finally {
       setFetching(false);
     }
   };
 
-  if (!isOpen || !lesson) return null;
-
-  const handleRevoke = async (assignmentId, schoolAdminName) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn thu hồi quyền truy cập bài giảng của "${schoolAdminName}" không?`)) {
-      return;
-    }
-
+  const handleRevoke = async (assignmentId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn thu hồi quyền truy cập học liệu của đơn vị này?')) return;
     setRevokingId(assignmentId);
     try {
-      await TenantService.revokeAssignment(assignmentId);
+      await TenantService.revokeLessonAssignment(assignmentId);
       toast.success('Thu hồi quyền truy cập thành công!');
       setAssignments(prev => prev.filter(item => item.id !== assignmentId));
       if (onRevokeSuccess) onRevokeSuccess();
@@ -55,20 +52,22 @@ const TenantAssignmentListModal = ({ isOpen, onClose, lesson, onRevokeSuccess })
     });
   };
 
-  return (
+  if (!isOpen || !lesson) return null;
+
+  return createPortal(
     <div className="tenant-modal-overlay animate-fade-in" onClick={onClose}>
-      <div className="tenant-modal-card animate-slide-right" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+      <div className="tenant-modal-card" style={{ maxWidth: '640px', margin: 'auto' }} onClick={e => e.stopPropagation()}>
         <div className="tenant-modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className="tenant-stat-icon gold" style={{ width: '38px', height: '38px' }}>
               <Users size={18} />
             </div>
             <div>
-              <h2 style={{ fontSize: '17px', color: 'var(--tenant-primary)', margin: 0 }}>Danh Sách Đơn Vị Đã Cấp Quyền</h2>
+              <h2 style={{ fontSize: '17px', color: 'var(--tenant-primary)', margin: 0, fontWeight: 700 }}>Danh Sách Đơn Vị Đã Cấp Quyền</h2>
               <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Bài học: {lesson.title}</span>
             </div>
           </div>
-          <button className="btn-emerald-outline" style={{ padding: '6px', borderRadius: '50%' }} onClick={onClose}>
+          <button className="btn-close-circle" onClick={onClose} title="Đóng">
             <X size={18} />
           </button>
         </div>
@@ -139,7 +138,8 @@ const TenantAssignmentListModal = ({ isOpen, onClose, lesson, onRevokeSuccess })
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

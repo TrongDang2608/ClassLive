@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Send, CheckSquare, Square, Search, Loader2, School } from 'lucide-react';
 import toast from 'react-hot-toast';
 import TenantService from './TenantService';
@@ -22,16 +23,17 @@ const TenantAssignModal = ({ isOpen, onClose, lesson, onSuccess }) => {
   const fetchSchoolAdmins = async () => {
     setFetching(true);
     try {
-      const res = await TenantService.getSchoolAdmins();
-      setSchoolAdmins(res.data || []);
+      const data = await TenantService.getSchoolAdmins();
+      setSchoolAdmins(data || []);
+      const assignedIds = lesson.assignedSchoolIds || [];
+      setSelectedIds(assignedIds);
     } catch (error) {
-      toast.error('Không thể tải danh sách School Admin.');
+      console.error('Lỗi lấy danh sách trường:', error);
+      toast.error('Không thể lấy danh sách Trường học.');
     } finally {
       setFetching(false);
     }
   };
-
-  if (!isOpen || !lesson) return null;
 
   const filteredAdmins = schoolAdmins.filter(admin => {
     const term = searchTerm.toLowerCase();
@@ -43,11 +45,9 @@ const TenantAssignModal = ({ isOpen, onClose, lesson, onSuccess }) => {
   });
 
   const handleToggleSelect = (id) => {
-    if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter(item => item !== id));
-    } else {
-      setSelectedIds([...selectedIds, id]);
-    }
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
   };
 
   const handleSelectAll = () => {
@@ -78,20 +78,22 @@ const TenantAssignModal = ({ isOpen, onClose, lesson, onSuccess }) => {
     }
   };
 
-  return (
+  if (!isOpen || !lesson) return null;
+
+  return createPortal(
     <div className="tenant-modal-overlay animate-fade-in" onClick={onClose}>
-      <div className="tenant-modal-card animate-slide-right" style={{ maxWidth: '550px' }} onClick={e => e.stopPropagation()}>
+      <div className="tenant-modal-card" style={{ maxWidth: '620px', margin: 'auto' }} onClick={e => e.stopPropagation()}>
         <div className="tenant-modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className="tenant-stat-icon" style={{ width: '38px', height: '38px' }}>
               <Send size={18} />
             </div>
             <div>
-              <h2 style={{ fontSize: '17px', color: 'var(--tenant-primary)', margin: 0 }}>Cấp Quyền Học Liệu</h2>
+              <h2 style={{ fontSize: '17px', color: 'var(--tenant-primary)', margin: 0, fontWeight: 700 }}>Cấp Quyền Học Liệu</h2>
               <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Dành cho School Admin (Trường học)</span>
             </div>
           </div>
-          <button className="btn-emerald-outline" style={{ padding: '6px', borderRadius: '50%' }} onClick={onClose}>
+          <button className="btn-close-circle" onClick={onClose} title="Đóng">
             <X size={18} />
           </button>
         </div>
@@ -188,7 +190,8 @@ const TenantAssignModal = ({ isOpen, onClose, lesson, onSuccess }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

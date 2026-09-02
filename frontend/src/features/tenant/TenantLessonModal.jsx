@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Upload, FileText, Trash2, Loader2, Plus, CheckCircle, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import TenantService from './TenantService';
@@ -109,11 +110,11 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
     }
   };
 
-  return (
+  return createPortal(
     <div className="tenant-modal-overlay animate-fade-in" onClick={onClose}>
       <div 
-        className="tenant-modal-card animate-slide-right" 
-        style={{ maxWidth: '750px', maxHeight: '90vh' }}
+        className="tenant-modal-card" 
+        style={{ maxWidth: '750px', maxHeight: '90vh', margin: 'auto' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="tenant-modal-header">
@@ -121,11 +122,11 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
             <div className="tenant-stat-icon" style={{ width: '38px', height: '38px' }}>
               <FileText size={20} />
             </div>
-            <h2 style={{ fontSize: '18px', color: 'var(--tenant-primary)', margin: 0 }}>
+            <h2 style={{ fontSize: '18px', color: 'var(--tenant-primary)', margin: 0, fontWeight: 700 }}>
               {lesson ? 'Cập Nhật Học Liệu' : 'Tạo Học Liệu Mới'}
             </h2>
           </div>
-          <button className="btn-emerald-outline" style={{ padding: '6px', borderRadius: '50%' }} onClick={onClose}>
+          <button className="btn-close-circle" onClick={onClose} title="Đóng">
             <X size={18} />
           </button>
         </div>
@@ -160,6 +161,7 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
                   <option value="Lịch Sử">Lịch Sử</option>
                   <option value="Địa Lý">Địa Lý</option>
                   <option value="Tin Học">Tin Học</option>
+                  <option value="Khác">Khác</option>
                 </select>
               </div>
 
@@ -169,88 +171,85 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
                   <option value="Lớp 10">Lớp 10</option>
                   <option value="Lớp 11">Lớp 11</option>
                   <option value="Lớp 12">Lớp 12</option>
-                  <option value="Lớp 9">Lớp 9</option>
-                  <option value="Lớp 8">Lớp 8</option>
                   <option value="Khác">Khác</option>
                 </select>
               </div>
             </div>
 
-            {/* Mô tả ngắn */}
+            {/* Mô tả tóm tắt */}
             <div className="form-group">
               <label>Mô tả tóm tắt</label>
               <textarea 
                 name="description" 
                 className="form-input" 
-                rows={2} 
+                rows="2"
                 placeholder="Mô tả mục tiêu kiến thức bài học..." 
                 value={formData.description} 
                 onChange={handleChange}
               />
             </div>
 
-            {/* Nội dung bài học */}
+            {/* Nội dung chi tiết */}
             <div className="form-group">
               <label>Nội dung chi tiết (HTML / Văn bản)</label>
               <textarea 
                 name="content" 
                 className="form-input" 
-                rows={4} 
+                rows="4"
                 placeholder="Nhập nội dung bài giảng tại đây..." 
                 value={formData.content} 
                 onChange={handleChange}
               />
             </div>
 
-            {/* Upload File đính kèm */}
-            <div className="form-group">
+            {/* Tải tệp tài liệu đính kèm */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
               <label>Tài liệu đính kèm (File PDF, Word, Ảnh, MP4...)</label>
               
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileChange} 
-                multiple 
-                style={{ display: 'none' }} 
-              />
-
+              {/* Box upload */}
               <div 
-                className="file-upload-zone"
+                style={{
+                  border: '2px dashed var(--tenant-border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '20px',
+                  textAlign: 'center',
+                  background: 'var(--bg-warm)',
+                  cursor: 'pointer',
+                  transition: 'all var(--transition)'
+                }}
                 onClick={() => fileInputRef.current?.click()}
               >
-                <Upload size={28} color="var(--tenant-primary)" style={{ marginBottom: '8px' }} />
-                <p style={{ margin: 0, fontWeight: 600, color: 'var(--tenant-primary)', fontSize: '14px' }}>
-                  Nhấn để chọn file đính kèm từ máy tính
-                </p>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Hỗ trợ PDF, DOCX, PNG, JPG, MP4 (Tối đa 50MB)</span>
+                <Upload size={24} color="var(--tenant-primary)" style={{ marginBottom: '6px' }} />
+                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
+                  Bấm để chọn file từ máy tính
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  Hỗ trợ nhiều định dạng tệp (Tối đa 50MB/file)
+                </div>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  multiple 
+                  style={{ display: 'none' }} 
+                />
               </div>
 
-              {/* Danh sách file hiện có (khi chỉnh sửa) */}
+              {/* Danh sách file cũ */}
               {existingFiles.length > 0 && (
-                <div style={{ marginTop: '14px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--tenant-primary)', display: 'block', marginBottom: '8px' }}>
-                    File hiện có ({existingFiles.length}):
-                  </span>
+                <div style={{ marginTop: '12px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Tệp hiện có ({existingFiles.length}):
+                  </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {existingFiles.map((file, idx) => (
-                      <div 
-                        key={idx}
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          padding: '8px 12px', background: 'var(--bg-warm)', border: '1px solid var(--tenant-border)',
-                          borderRadius: '6px', fontSize: '13px'
-                        }}
-                      >
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80%' }}>
-                          📄 {file.originalName}
-                        </span>
-                        <button 
-                          type="button" 
-                          onClick={() => handleRemoveExistingFile(idx)}
-                          style={{ border: 'none', background: 'transparent', color: '#d32f2f', cursor: 'pointer' }}
-                          title="Xóa file này (Sẽ bị xóa vật lý khi lưu)"
-                        >
-                          <Trash2 size={16} />
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--white)', border: '1px solid var(--tenant-border)', borderRadius: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                          <FileText size={16} color="var(--tenant-primary)" />
+                          <span>{file.originalName || file.url?.split('/').pop() || `File #${idx+1}`}</span>
+                        </div>
+                        <button type="button" onClick={() => handleRemoveExistingFile(idx)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }} title="Xóa file">
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     ))}
@@ -258,31 +257,22 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
                 </div>
               )}
 
-              {/* Danh sách file mới thêm */}
+              {/* Danh sách file vừa chọn mới */}
               {newFiles.length > 0 && (
-                <div style={{ marginTop: '14px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--gold-dark)', display: 'block', marginBottom: '8px' }}>
-                    File chuẩn bị tải lên ({newFiles.length}):
-                  </span>
+                <div style={{ marginTop: '12px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--tenant-primary)', marginBottom: '6px' }}>
+                    Tệp mới chọn ({newFiles.length}):
+                  </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {newFiles.map((file, idx) => (
-                      <div 
-                        key={idx}
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          padding: '8px 12px', background: 'var(--gold-glow)', border: '1px solid var(--gold-border)',
-                          borderRadius: '6px', fontSize: '13px'
-                        }}
-                      >
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80%' }}>
-                          ✨ {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                        </span>
-                        <button 
-                          type="button" 
-                          onClick={() => handleRemoveNewFile(idx)}
-                          style={{ border: 'none', background: 'transparent', color: '#d32f2f', cursor: 'pointer' }}
-                        >
-                          <Trash2 size={16} />
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--tenant-primary-subtle)', border: '1px solid var(--tenant-border)', borderRadius: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                          <FileText size={16} color="var(--tenant-primary)" />
+                          <span style={{ fontWeight: 500 }}>{file.name}</span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                        </div>
+                        <button type="button" onClick={() => handleRemoveNewFile(idx)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }} title="Bỏ chọn">
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     ))}
@@ -310,7 +300,8 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
