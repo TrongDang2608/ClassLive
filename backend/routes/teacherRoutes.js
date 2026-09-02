@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const teacherController = require('../controllers/teacherController');
-const { verifyToken, requireInstructor } = require('../middlewares/authMiddleware');
+const { verifyToken, requireTeacher } = require('../middlewares/authMiddleware');
 
-// Áp dụng middleware xác thực Token và Role Giảng viên/Giáo viên cho toàn bộ route
+// Áp dụng middleware xác thực Token và Role Giáo viên cho toàn bộ route
 router.use(verifyToken);
-router.use(requireInstructor);
+router.use(requireTeacher);
 
 // === ROUTES TEACHER PORTAL ===
 
