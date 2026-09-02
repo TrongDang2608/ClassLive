@@ -84,10 +84,10 @@ const OtpPage = () => {
         navigate('/tenant');
       } else if (response.role === 'school_admin') {
         navigate('/school-admin');
-      } else if (response.role === 'instructor' || response.role === 'teacher') {
+      } else if (response.role === 'teacher') {
         navigate('/teacher');
       } else {
-        navigate('/student');
+        navigate('/login');
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Mã xác thực không hợp lệ.');

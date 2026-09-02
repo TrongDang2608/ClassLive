@@ -21,21 +21,14 @@ exports.verifyToken = (req, res, next) => {
   }
 };
 
-exports.requireInstructor = (req, res, next) => {
-  if (!req.user || (req.user.role !== 'instructor' && req.user.role !== 'teacher')) {
-    return res.status(403).json({ error: 'Chỉ Giảng viên / Giáo viên mới có quyền thực hiện hành động này' });
+exports.requireTeacher = (req, res, next) => {
+  if (!req.user || req.user.role !== 'teacher') {
+    return res.status(403).json({ error: 'Chỉ Giáo viên mới có quyền thực hiện hành động này' });
   }
   next();
 };
 
-exports.requireStudent = (req, res, next) => {
-  if (!req.user || req.user.role !== 'student') {
-    return res.status(403).json({ error: 'Chỉ Học viên mới có quyền thực hiện hành động này' });
-  }
-  next();
-};
-
-// Hàm đa phân quyền mới (Dành cho mô hình 4 Roles)
+// Hàm đa phân quyền (Dành cho mô hình 4 Roles: admin, tenant_admin, school_admin, teacher)
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {

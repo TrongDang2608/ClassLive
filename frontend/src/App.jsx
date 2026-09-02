@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './features/auth/LoginPage';
 import OtpPage from './features/auth/OtpPage';
 import SetupAccountPage from './features/auth/SetupAccountPage';
-import StudentDashboard from './features/student/StudentDashboard';
 import AdminDashboard from './features/admin/AdminDashboard';
 import TenantDashboard from './features/tenant/TenantDashboard';
 import SchoolDashboard from './features/school/SchoolDashboard';
@@ -65,20 +64,8 @@ function App() {
         <Route 
           path="/teacher" 
           element={
-            <PrivateRoute requiredRole="instructor">
+            <PrivateRoute requiredRole="teacher">
               <TeacherDashboard />
-            </PrivateRoute>
-          } 
-        />
-        <Route 
-          path="/instructor" 
-          element={<Navigate to="/teacher" replace />} 
-        />
-        <Route 
-          path="/student" 
-          element={
-            <PrivateRoute requiredRole="student">
-              <StudentDashboard />
             </PrivateRoute>
           } 
         />
