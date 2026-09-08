@@ -1,37 +1,64 @@
 const adminService = require('../services/adminService');
+const { AddUserDto, EditUserDto, GetUsersQueryDto } = require('../dtos/adminDto');
 const catchAsync = require('../utils/catchAsync');
 
 class AdminController {
+  // POST /api/admin/addUser
   addUser = catchAsync(async (req, res, next) => {
-    // req.user.id lấy từ jwt middleware
-    const result = await adminService.addUser(req.body, req.user.id);
-    res.status(201).json({ success: true, data: result });
+    const dto = new AddUserDto(req.body);
+    dto.validate();
+
+    const result = await adminService.addUser(dto, req.user.id);
+    res.status(201).json({
+      success: true,
+      message: 'Tạo tài khoản người dùng thành công.',
+      data: result
+    });
   });
 
+  // GET /api/admin/users
   getUsers = catchAsync(async (req, res, next) => {
-    const roleFilter = req.query.role || '';
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
+    const queryDto = new GetUsersQueryDto(req.query);
+    queryDto.validate();
 
-    const result = await adminService.getUsers(roleFilter, page, limit);
-    res.status(200).json({ success: true, ...result });
+    const result = await adminService.getUsers(queryDto.role, queryDto.page, queryDto.limit);
+    res.status(200).json({
+      success: true,
+      ...result
+    });
   });
 
+  // GET /api/admin/user/:identifier
   getUser = catchAsync(async (req, res, next) => {
     const { identifier } = req.params; 
     const result = await adminService.getUser(identifier);
-    res.status(200).json({ success: true, data: result });
+    res.status(200).json({
+      success: true,
+      data: result
+    });
   });
 
+  // PUT /api/admin/editUser/:identifier
   editUser = catchAsync(async (req, res, next) => {
     const { identifier } = req.params;
-    const result = await adminService.editUser(identifier, req.body);
-    res.status(200).json(result);
+    const dto = new EditUserDto(req.body);
+    dto.validate();
+
+    const result = await adminService.editUser(identifier, dto.toUpdateData());
+    res.status(200).json({
+      success: true,
+      message: result.message
+    });
   });
 
+  // DELETE /api/admin/user/:identifier
   deleteUser = catchAsync(async (req, res, next) => {
-    const result = await adminService.deleteUser(req.params.identifier);
-    res.status(200).json(result);
+    const { identifier } = req.params;
+    const result = await adminService.deleteUser(identifier);
+    res.status(200).json({
+      success: true,
+      message: result.message
+    });
   });
 }
 
