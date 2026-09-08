@@ -1,30 +1,24 @@
 const userRepository = require('../repositories/userRepository');
+const AppError = require('../utils/AppError');
+const jwt = require('jsonwebtoken');
+const emailService = require('./emailService');
 
 class AdminService {
   // 1. Thêm User mới (dành cho Admin tạo cấp dưới)
   async addUser(data, creatorId) {
     const { name, phone, email, role = 'tenant_admin', organizationId = 'root' } = data;
 
-    if (!name || !phone) {
-      throw new Error('Tên và Số điện thoại là bắt buộc.');
-    }
-
-    // Role admin chỉ có thể tạo các role nhất định
-    const allowedRoles = ['admin', 'tenant_admin', 'school_admin', 'teacher'];
-    if (!allowedRoles.includes(role)) {
-      throw new Error('Role không hợp lệ.');
-    }
-
-    // Kiểm tra trùng lặp
+    // Kiểm tra trùng lặp số điện thoại
     const existingPhone = await userRepository.findByPhone(phone);
     if (existingPhone) {
-      throw new Error(`Số điện thoại '${phone}' đã được đăng ký.`);
+      throw new AppError(`Số điện thoại '${phone}' đã được đăng ký.`, 400);
     }
     
-    if (email) {
+    // Kiểm tra trùng lặp email nếu có
+    if (email && email.trim() !== '') {
       const existingEmail = await userRepository.findByEmail(email);
       if (existingEmail) {
-        throw new Error(`Email '${email}' đã được đăng ký.`);
+        throw new AppError(`Email '${email}' đã được đăng ký.`, 400);
       }
     }
 
@@ -41,12 +35,9 @@ class AdminService {
 
     const newId = await userRepository.create(userData);
 
-    // Gửi email cài đặt tài khoản (tương tự instructor cũ)
-    const jwt = require('jsonwebtoken');
-    const emailService = require('./emailService');
-    const setupToken = jwt.sign({ id: newId }, process.env.JWT_SECRET, { expiresIn: '24h' });
-
-    if (email) {
+    // Gửi email cài đặt tài khoản
+    if (email && email.trim() !== '') {
+      const setupToken = jwt.sign({ id: newId }, process.env.JWT_SECRET, { expiresIn: '24h' });
       emailService.sendSetupAccountEmail(email, name, setupToken).catch(err => {
         console.error('Lỗi khi gửi email setup cho:', email, err);
       });
@@ -55,13 +46,12 @@ class AdminService {
     return { id: newId, ...userData };
   }
 
-  // 2. Lấy danh sách tất cả user
+  // 2. Lấy danh sách tất cả user (phân trang + lọc theo role)
   async getUsers(roleFilter, page = 1, limit = 10) {
     const total = await userRepository.countAll(roleFilter);
     const users = await userRepository.findAll(roleFilter, page, limit);
     
-    // Admin không cần fetch bài tập như instructor cũ
-    const data = users.map(u => ({
+    const data = users.map(u => u.toSafeObject ? u.toSafeObject() : {
       id: u.id,
       name: u.name,
       username: u.username,
@@ -71,46 +61,63 @@ class AdminService {
       createdBy: u.createdBy,
       organizationId: u.organizationId,
       createdAt: u.createdAt
-    }));
+    });
 
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   // 3. Xem chi tiết 1 User
   async getUser(identifier) {
-    const user = await userRepository.findByUsernameOrEmail(identifier) || await userRepository.findByPhone(identifier) || await userRepository.findById(identifier);
-    if (!user) throw new Error('Không tìm thấy tài khoản.');
-    return {
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      phone: user.phone,
-      email: user.email,
-      role: user.role,
-      createdBy: user.createdBy,
-      organizationId: user.organizationId
-    };
+    const user = await userRepository.findByPhoneOrId(identifier) 
+      || await userRepository.findByUsernameOrEmail(identifier);
+    if (!user) {
+      throw new AppError('Không tìm thấy tài khoản người dùng.', 404);
+    }
+    return user.toSafeObject ? user.toSafeObject() : user;
   }
 
   // 4. Sửa User
   async editUser(identifier, updateData) {
-    const user = await userRepository.findByUsernameOrEmail(identifier) || await userRepository.findByPhone(identifier) || await userRepository.findById(identifier);
-    if (!user) throw new Error('Không tìm thấy tài khoản để sửa.');
+    const user = await userRepository.findByPhoneOrId(identifier) 
+      || await userRepository.findByUsernameOrEmail(identifier);
+    if (!user) {
+      throw new AppError('Không tìm thấy tài khoản để cập nhật.', 404);
+    }
+
+    // Nếu cập nhật số điện thoại, kiểm tra trùng lặp
+    if (updateData.phone && updateData.phone !== user.phone) {
+      const existingPhone = await userRepository.findByPhone(updateData.phone);
+      if (existingPhone && existingPhone.id !== user.id) {
+        throw new AppError(`Số điện thoại '${updateData.phone}' đã có tài khoản khác sử dụng.`, 400);
+      }
+    }
+
+    // Nếu cập nhật email, kiểm tra trùng lặp
+    if (updateData.email && updateData.email !== user.email) {
+      const existingEmail = await userRepository.findByEmail(updateData.email);
+      if (existingEmail && existingEmail.id !== user.id) {
+        throw new AppError(`Email '${updateData.email}' đã có tài khoản khác sử dụng.`, 400);
+      }
+    }
+
     await userRepository.update(user.id, updateData);
-    return { success: true, message: 'Cập nhật thành công' };
+    return { success: true, message: 'Cập nhật tài khoản thành công.' };
   }
 
   // 5. Xóa User
   async deleteUser(identifier) {
-    const user = await userRepository.findByUsernameOrEmail(identifier) || await userRepository.findByPhone(identifier) || await userRepository.findById(identifier);
-    if (!user) throw new Error('Không tìm thấy tài khoản để xóa.');
+    const user = await userRepository.findByPhoneOrId(identifier) 
+      || await userRepository.findByUsernameOrEmail(identifier);
+    if (!user) {
+      throw new AppError('Không tìm thấy tài khoản để xóa.', 404);
+    }
     
     if (user.role === 'admin' && user.createdBy === 'system') {
-        throw new Error('Không thể xóa Root Admin!');
+      throw new AppError('Không thể xóa Root Admin của hệ thống!', 403);
     }
     
     await userRepository.delete(user.id);
-    return { success: true, message: 'Xóa tài khoản thành công' };
+    return { success: true, message: 'Xóa tài khoản thành công.' };
   }
 }
 
