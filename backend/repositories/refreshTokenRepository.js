@@ -1,4 +1,5 @@
 const { getFirestore } = require('firebase-admin/firestore');
+const RefreshToken = require('../models/RefreshToken');
 
 class RefreshTokenRepository {
   constructor() {
@@ -8,13 +9,15 @@ class RefreshTokenRepository {
 
   // Lưu Refresh Token vào Database
   async save(userId, token, expiresAt) {
-    const docRef = this.collection.doc(token);
-    await docRef.set({
-      userId: userId,
-      token: token,
-      expiresAt: expiresAt,
+    const refreshTokenInstance = new RefreshToken(token, {
+      userId,
+      token,
+      expiresAt,
       createdAt: Date.now()
     });
+    const docRef = this.collection.doc(token);
+    await docRef.set(refreshTokenInstance.toFirestore());
+    return refreshTokenInstance;
   }
 
   // Tìm Refresh Token trong Database
@@ -24,15 +27,15 @@ class RefreshTokenRepository {
     
     if (!doc.exists) return null;
     
-    const data = doc.data();
+    const tokenInstance = new RefreshToken(doc.id, doc.data());
     
     // Kiểm tra hết hạn
-    if (Date.now() > data.expiresAt) {
+    if (tokenInstance.isExpired()) {
       await this.deleteByToken(token); // Xóa nếu hết hạn
       return null;
     }
     
-    return data;
+    return tokenInstance;
   }
 
   // Xóa Refresh Token khi Logout

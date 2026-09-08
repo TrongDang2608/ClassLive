@@ -1,65 +1,104 @@
-﻿const authService = require('../services/authService');
-const { SetupAccountDto, LoginPasswordDto, CreateAccessCodeDto, ValidateAccessCodeDto } = require('../dtos/authDto');
+const authService = require('../services/authService');
+const {
+  SetupAccountDto,
+  LoginPasswordDto,
+  CreateAccessCodeDto,
+  ValidateAccessCodeDto,
+  RefreshTokenDto,
+  LogoutDto
+} = require('../dtos/authDto');
 const catchAsync = require('../utils/catchAsync');
-const AppError = require('../utils/AppError');
 
-const jwt = require('jsonwebtoken');
+class AuthController {
+  // POST /api/auth/setup-account
+  setupAccount = catchAsync(async (req, res, next) => {
+    const dto = new SetupAccountDto(req.body);
+    dto.validate();
 
-exports.setupAccount = catchAsync(async (req, res, next) => {
-  const { token, newUsername, newPassword } = req.body;
+    const result = await authService.setupAccount(
+      dto.token,
+      dto.newUsername,
+      dto.newPassword
+    );
 
-  if (!token) {
-    throw new AppError('Token là bắt buộc', 400);
-  }
+    res.status(200).json({
+      success: true,
+      message: result.message
+    });
+  });
 
-  let decoded;
-  try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
-  } catch (error) {
-    throw new AppError('Link thiáº¿t láº­p khÃ´ng há»£p lá»‡ hoáº·c Ä‘Ã£ háº¿t háº¡n', 400);
-  }
+  // POST /api/auth/login-password (Bước 1)
+  loginPassword = catchAsync(async (req, res, next) => {
+    const dto = new LoginPasswordDto(req.body);
+    dto.validate();
 
-  const userId = decoded.id;
-  const result = await authService.setupAccount(userId, newUsername, newPassword);
-  res.status(200).json(result);
-});
+    const result = await authService.loginPassword(dto.username, dto.password);
 
-exports.loginPassword = catchAsync(async (req, res, next) => {
-  const dto = new LoginPasswordDto(req.body);
-  dto.validate();
-  const result = await authService.loginPassword(dto.username, dto.password);
-  res.status(200).json(result);
-});
+    res.status(200).json({
+      success: true,
+      message: result.message,
+      userId: result.userId,
+      maskedPhone: result.maskedPhone,
+      data: {
+        userId: result.userId,
+        maskedPhone: result.maskedPhone
+      }
+    });
+  });
 
-exports.createAccessCode = catchAsync(async (req, res, next) => {
-  const dto = new CreateAccessCodeDto(req.body);
-  dto.validate();
-  const result = await authService.requestAccessCode(dto.userId, dto.type);
-  res.status(200).json(result);
-});
+  // POST /api/auth/createAccessCode (Bước 2: gửi lại OTP)
+  createAccessCode = catchAsync(async (req, res, next) => {
+    const dto = new CreateAccessCodeDto(req.body);
+    dto.validate();
 
-exports.validateAccessCode = catchAsync(async (req, res, next) => {
-  const dto = new ValidateAccessCodeDto(req.body);
-  dto.validate();
-  const result = await authService.validateAccessCode(dto.userId, dto.accessCode);
-  res.status(200).json(result);
-});
+    const result = await authService.requestAccessCode(dto.userId, dto.type);
 
-exports.refreshToken = catchAsync(async (req, res, next) => {
-  const { refreshToken } = req.body;
-  if (!refreshToken) {
-    throw new AppError('Thiáº¿u Refresh Token', 400);
-  }
-  const result = await authService.refreshToken(refreshToken);
-  res.json(result);
-});
+    res.status(200).json({
+      success: true,
+      message: result.message
+    });
+  });
 
-exports.logout = catchAsync(async (req, res, next) => {
-  const { refreshToken } = req.body;
-  if (!refreshToken) {
-    throw new AppError('Thiáº¿u Refresh Token', 400);
-  }
-  const result = await authService.logout(refreshToken);
-  res.json(result);
-});
+  // POST /api/auth/validateAccessCode (Bước 3: xác thực OTP và nhận token)
+  validateAccessCode = catchAsync(async (req, res, next) => {
+    const dto = new ValidateAccessCodeDto(req.body);
+    dto.validate();
 
+    const result = await authService.validateAccessCode(dto.userId, dto.accessCode);
+
+    res.status(200).json({
+      success: true,
+      ...result,
+      data: result
+    });
+  });
+
+  // POST /api/auth/refresh
+  refreshToken = catchAsync(async (req, res, next) => {
+    const dto = new RefreshTokenDto(req.body);
+    dto.validate();
+
+    const result = await authService.refreshToken(dto.refreshToken);
+
+    res.status(200).json({
+      success: true,
+      token: result.token,
+      data: result
+    });
+  });
+
+  // POST /api/auth/logout
+  logout = catchAsync(async (req, res, next) => {
+    const dto = new LogoutDto(req.body);
+    dto.validate();
+
+    const result = await authService.logout(dto.refreshToken);
+
+    res.status(200).json({
+      success: true,
+      message: result.message
+    });
+  });
+}
+
+module.exports = new AuthController();
