@@ -9,6 +9,14 @@ class Otp {
   isExpired() {
     return Date.now() > this.expiresAt;
   }
+
+  toFirestore() {
+    return {
+      identifier: this.identifier,
+      code: this.code,
+      expiresAt: this.expiresAt
+    };
+  }
 }
 
 module.exports = Otp;
