@@ -13,7 +13,7 @@ class TeacherService {
     if (user.schoolAdminId) {
       const schoolUser = await userRepository.findById(user.schoolAdminId);
       if (schoolUser) {
-        schoolAdmin = {
+        schoolAdmin = schoolUser.toSafeObject ? schoolUser.toSafeObject() : {
           id: schoolUser.id,
           name: schoolUser.name,
           email: schoolUser.email,
@@ -23,14 +23,9 @@ class TeacherService {
       }
     }
 
+    const safeUser = user.toSafeObject ? user.toSafeObject() : user;
     return {
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      schoolAdminId: user.schoolAdminId,
+      ...safeUser,
       schoolAdmin
     };
   }
@@ -45,7 +40,7 @@ class TeacherService {
     if (user && user.schoolAdminId) {
       const schoolUser = await userRepository.findById(user.schoolAdminId);
       if (schoolUser) {
-        schoolAdmin = {
+        schoolAdmin = schoolUser.toSafeObject ? schoolUser.toSafeObject() : {
           id: schoolUser.id,
           name: schoolUser.name,
           email: schoolUser.email,
@@ -56,13 +51,12 @@ class TeacherService {
 
     // Lấy danh sách chi tiết các bài học để đếm tổng số tệp đính kèm
     let totalFiles = 0;
-    const lessonsWithMeta = await Promise.all(
+    await Promise.all(
       teacherAssignments.map(async (assign) => {
         const lesson = await lessonRepository.findLessonById(assign.lessonId);
         if (lesson && lesson.files) {
           totalFiles += lesson.files.length;
         }
-        return lesson;
       })
     );
 

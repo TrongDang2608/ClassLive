@@ -1,4 +1,5 @@
 const teacherService = require('../services/teacherService');
+const { GetTeacherLessonsQueryDto } = require('../dtos/teacherDto');
 const catchAsync = require('../utils/catchAsync');
 
 class TeacherController {
@@ -22,12 +23,20 @@ class TeacherController {
 
   // GET /api/teacher/lessons
   getLessons = catchAsync(async (req, res, next) => {
-    const { page, limit, search, subject, grade } = req.query;
-    const result = await teacherService.getAssignedLessons(req.user.id, page, limit, {
-      search,
-      subject,
-      grade
-    });
+    const queryDto = new GetTeacherLessonsQueryDto(req.query);
+    queryDto.validate();
+
+    const result = await teacherService.getAssignedLessons(
+      req.user.id, 
+      queryDto.page, 
+      queryDto.limit, 
+      {
+        search: queryDto.search,
+        subject: queryDto.subject,
+        grade: queryDto.grade
+      }
+    );
+
     res.status(200).json({
       success: true,
       data: result.lessons,

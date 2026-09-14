@@ -1,26 +1,32 @@
 const chatService = require('../services/chatService');
+const { GetMessagesDto } = require('../dtos/chatDto');
 const catchAsync = require('../utils/catchAsync');
 
-exports.getContacts = catchAsync(async (req, res) => {
-  const userId = req.user.id;
-  const role = req.user.role;
-  
-  const contacts = await chatService.getContacts(userId, role);
-  
-  res.status(200).json({
-    success: true,
-    data: contacts
+class ChatController {
+  getContacts = catchAsync(async (req, res, next) => {
+    const userId = req.user.id;
+    const role = req.user.role;
+    
+    const contacts = await chatService.getContacts(userId, role);
+    
+    res.status(200).json({
+      success: true,
+      data: contacts
+    });
   });
-});
 
-exports.getMessages = catchAsync(async (req, res) => {
-  const userId = req.user.id;
-  const partnerId = req.params.partnerId;
-  
-  const messages = await chatService.getMessages(userId, partnerId);
-  
-  res.status(200).json({
-    success: true,
-    data: messages
+  getMessages = catchAsync(async (req, res, next) => {
+    const userId = req.user.id;
+    const dto = new GetMessagesDto(req.params);
+    dto.validate();
+    
+    const messages = await chatService.getMessages(userId, dto.partnerId);
+    
+    res.status(200).json({
+      success: true,
+      data: messages
+    });
   });
-});
+}
+
+module.exports = new ChatController();
