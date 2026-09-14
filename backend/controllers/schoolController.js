@@ -1,20 +1,29 @@
 const schoolService = require('../services/schoolService');
+const {
+  CreateTeacherDto,
+  UpdateTeacherDto,
+  AssignLessonToTeachersDto,
+  GetTeachersQueryDto,
+  GetAssignedLessonsQueryDto
+} = require('../dtos/schoolDto');
 const catchAsync = require('../utils/catchAsync');
 
 class SchoolController {
   // === PROFILE & DASHBOARD ===
-  getProfile = catchAsync(async (req, res) => {
+  getProfile = catchAsync(async (req, res, next) => {
     const schoolAdminId = req.user.id;
     const profile = await schoolService.getProfile(schoolAdminId);
+
     res.status(200).json({
       success: true,
       data: profile
     });
   });
 
-  getDashboardStats = catchAsync(async (req, res) => {
+  getDashboardStats = catchAsync(async (req, res, next) => {
     const schoolAdminId = req.user.id;
     const stats = await schoolService.getDashboardStats(schoolAdminId);
+
     res.status(200).json({
       success: true,
       data: stats
@@ -22,16 +31,18 @@ class SchoolController {
   });
 
   // === BÀI GIẢNG ĐƯỢC CẤP (LESSONS) ===
-  getAssignedLessons = catchAsync(async (req, res) => {
+  getAssignedLessons = catchAsync(async (req, res, next) => {
     const schoolAdminId = req.user.id;
-    const { page = 1, limit = 10, subject, grade, search } = req.query;
+    const queryDto = new GetAssignedLessonsQueryDto(req.query);
+    queryDto.validate();
 
     const result = await schoolService.getAssignedLessons(
       schoolAdminId, 
-      parseInt(page, 10) || 1, 
-      parseInt(limit, 10) || 10, 
-      { subject, grade, search }
+      queryDto.page, 
+      queryDto.limit, 
+      { subject: queryDto.subject, grade: queryDto.grade, search: queryDto.search }
     );
+
     res.status(200).json({
       success: true,
       data: result.lessons,
@@ -39,11 +50,12 @@ class SchoolController {
     });
   });
 
-  getLessonDetails = catchAsync(async (req, res) => {
+  getLessonDetails = catchAsync(async (req, res, next) => {
     const schoolAdminId = req.user.id;
     const { id } = req.params;
 
     const lesson = await schoolService.getLessonDetails(schoolAdminId, id);
+
     res.status(200).json({
       success: true,
       data: lesson
@@ -51,16 +63,18 @@ class SchoolController {
   });
 
   // === QUẢN LÝ GIÁO VIÊN (TEACHERS) ===
-  getTeachers = catchAsync(async (req, res) => {
+  getTeachers = catchAsync(async (req, res, next) => {
     const schoolAdminId = req.user.id;
-    const { page = 1, limit = 10, search } = req.query;
+    const queryDto = new GetTeachersQueryDto(req.query);
+    queryDto.validate();
 
     const result = await schoolService.getTeachers(
       schoolAdminId, 
-      parseInt(page, 10) || 1, 
-      parseInt(limit, 10) || 10, 
-      search
+      queryDto.page, 
+      queryDto.limit, 
+      queryDto.search
     );
+
     res.status(200).json({
       success: true,
       data: result.teachers,
@@ -68,9 +82,13 @@ class SchoolController {
     });
   });
 
-  createTeacher = catchAsync(async (req, res) => {
+  createTeacher = catchAsync(async (req, res, next) => {
     const schoolAdminId = req.user.id;
-    const teacher = await schoolService.createTeacher(schoolAdminId, req.body);
+    const dto = new CreateTeacherDto(req.body);
+    dto.validate();
+
+    const teacher = await schoolService.createTeacher(schoolAdminId, dto);
+
     res.status(201).json({
       success: true,
       message: 'Tạo tài khoản Giáo viên thành công và đã gửi email thiết lập.',
@@ -78,11 +96,14 @@ class SchoolController {
     });
   });
 
-  updateTeacher = catchAsync(async (req, res) => {
+  updateTeacher = catchAsync(async (req, res, next) => {
     const schoolAdminId = req.user.id;
     const { id } = req.params;
+    const dto = new UpdateTeacherDto(req.body);
+    dto.validate();
 
-    const updated = await schoolService.updateTeacher(schoolAdminId, id, req.body);
+    const updated = await schoolService.updateTeacher(schoolAdminId, id, dto.toUpdateData());
+
     res.status(200).json({
       success: true,
       message: 'Cập nhật thông tin Giáo viên thành công.',
@@ -90,11 +111,12 @@ class SchoolController {
     });
   });
 
-  deleteTeacher = catchAsync(async (req, res) => {
+  deleteTeacher = catchAsync(async (req, res, next) => {
     const schoolAdminId = req.user.id;
     const { id } = req.params;
 
     const result = await schoolService.deleteTeacher(schoolAdminId, id);
+
     res.status(200).json({
       success: true,
       ...result
@@ -102,34 +124,38 @@ class SchoolController {
   });
 
   // === PHÂN BỔ BÀI GIẢNG CHO GIÁO VIÊN ===
-  assignLessonToTeachers = catchAsync(async (req, res) => {
+  assignLessonToTeachers = catchAsync(async (req, res, next) => {
     const schoolAdminId = req.user.id;
     const { id } = req.params; // Lesson ID
-    const { teacherIds } = req.body;
+    const dto = new AssignLessonToTeachersDto({ lessonId: id, teacherIds: req.body.teacherIds });
+    dto.validate();
 
-    const result = await schoolService.assignLessonToTeachers(schoolAdminId, id, teacherIds);
+    const result = await schoolService.assignLessonToTeachers(schoolAdminId, dto.lessonId, dto.teacherIds);
+
     res.status(200).json({
       success: true,
       ...result
     });
   });
 
-  getLessonAssignments = catchAsync(async (req, res) => {
+  getLessonAssignments = catchAsync(async (req, res, next) => {
     const schoolAdminId = req.user.id;
     const { id } = req.params; // Lesson ID
 
     const assignments = await schoolService.getLessonAssignmentsToTeachers(schoolAdminId, id);
+
     res.status(200).json({
       success: true,
       data: assignments
     });
   });
 
-  revokeTeacherAssignment = catchAsync(async (req, res) => {
+  revokeTeacherAssignment = catchAsync(async (req, res, next) => {
     const schoolAdminId = req.user.id;
     const { assignmentId } = req.params;
 
     const result = await schoolService.revokeTeacherAssignment(schoolAdminId, assignmentId);
+
     res.status(200).json({
       success: true,
       ...result
@@ -137,9 +163,10 @@ class SchoolController {
   });
 
   // === CHAT CONTACTS ===
-  getChatContacts = catchAsync(async (req, res) => {
+  getChatContacts = catchAsync(async (req, res, next) => {
     const schoolAdminId = req.user.id;
     const contacts = await schoolService.getChatContacts(schoolAdminId);
+
     res.status(200).json({
       success: true,
       data: contacts
