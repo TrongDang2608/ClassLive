@@ -3,7 +3,6 @@ const lessonRepository = require('../repositories/lessonRepository');
 const assignmentRepository = require('../repositories/assignmentRepository');
 const teacherAssignmentRepository = require('../repositories/teacherAssignmentRepository');
 const emailService = require('./emailService');
-const { CreateTeacherDto, AssignLessonToTeachersDto } = require('../dtos/schoolDto');
 const AppError = require('../utils/AppError');
 
 class SchoolService {
@@ -12,16 +11,7 @@ class SchoolService {
     const user = await userRepository.findById(schoolAdminId);
     if (!user) throw new AppError('Không tìm thấy tài khoản School Admin.', 404);
 
-    return {
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      schoolName: user.schoolName || user.name,
-      organizationId: user.organizationId
-    };
+    return user.toSafeObject ? user.toSafeObject() : user;
   }
 
   async getDashboardStats(schoolAdminId) {
@@ -131,7 +121,7 @@ class SchoolService {
         total,
         page: Number(page),
         limit: Number(limit),
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / limit) || 1
       }
     };
   }
@@ -164,17 +154,7 @@ class SchoolService {
       );
     }
 
-    const sanitizedTeachers = filteredTeachers.map(t => ({
-      id: t.id,
-      name: t.name,
-      username: t.username,
-      email: t.email,
-      phone: t.phone,
-      role: t.role,
-      schoolName: t.schoolName,
-      isSetup: t.isSetup,
-      createdAt: t.createdAt
-    }));
+    const sanitizedTeachers = filteredTeachers.map(t => (t.toSafeObject ? t.toSafeObject() : t));
 
     return {
       teachers: sanitizedTeachers,
@@ -182,28 +162,25 @@ class SchoolService {
         total,
         page: Number(page),
         limit: Number(limit),
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / limit) || 1
       }
     };
   }
 
   async createTeacher(schoolAdminId, teacherData) {
-    const dto = new CreateTeacherDto(teacherData);
-    dto.validate();
-
     const schoolAdmin = await userRepository.findById(schoolAdminId);
     if (!schoolAdmin) throw new AppError('Không tìm thấy thông tin School Admin.', 404);
 
     // Kiểm tra email trùng
-    const existingEmail = await userRepository.findByEmail(dto.email);
+    const existingEmail = await userRepository.findByEmail(teacherData.email);
     if (existingEmail) {
       throw new AppError('Email này đã được sử dụng bởi một tài khoản khác trong hệ thống.', 400);
     }
 
     const newTeacherData = {
-      name: dto.name.trim(),
-      email: dto.email.trim().toLowerCase(),
-      phone: dto.phone.trim(),
+      name: teacherData.name.trim(),
+      email: teacherData.email.trim().toLowerCase(),
+      phone: teacherData.phone.trim(),
       role: 'teacher',
       schoolName: schoolAdmin.schoolName || schoolAdmin.name,
       organizationId: schoolAdmin.organizationId || `school-${schoolAdminId}`,
@@ -216,7 +193,7 @@ class SchoolService {
 
     // Gửi email thiết lập tài khoản
     try {
-      await emailService.sendSetupEmail(dto.email, teacherId, dto.name);
+      await emailService.sendSetupEmail(teacherData.email, teacherId, teacherData.name);
     } catch (err) {
       console.error('Lỗi khi gửi email thiết lập Giáo viên:', err.message);
     }
@@ -243,7 +220,7 @@ class SchoolService {
     }
 
     await userRepository.update(teacherId, payload);
-    return { id: teacherId, ...payload };
+    return { id: teacherId, ...teacher, ...payload };
   }
 
   async deleteTeacher(schoolAdminId, teacherId) {
@@ -262,9 +239,6 @@ class SchoolService {
 
   // === 4. PHÂN BỔ HỌC LIỆU CHO GIÁO VIÊN ===
   async assignLessonToTeachers(schoolAdminId, lessonId, teacherIds) {
-    const dto = new AssignLessonToTeachersDto({ lessonId, teacherIds });
-    dto.validate();
-
     // 1. Kiểm tra bài giảng có được Tenant cấp cho School Admin không
     const hasAccess = await assignmentRepository.findExistingAssignment(lessonId, schoolAdminId);
     if (!hasAccess) {
@@ -272,7 +246,7 @@ class SchoolService {
     }
 
     const assignmentsToCreate = [];
-    for (const teacherId of dto.teacherIds) {
+    for (const teacherId of teacherIds) {
       // 2. Kiểm tra xem giáo viên có thuộc trường không
       const teacher = await userRepository.findById(teacherId);
       if (!teacher || teacher.createdBy !== schoolAdminId) {
@@ -292,13 +266,14 @@ class SchoolService {
     }
 
     if (assignmentsToCreate.length === 0) {
-      return { message: 'Tất cả các Giáo viên được chọn đã được cấp quyền bài giảng này từ trước.' };
+      return { message: 'Tất cả các Giáo viên được chọn đã được cấp quyền bài giảng này từ trước.', assignedCount: 0 };
     }
 
     const created = await teacherAssignmentRepository.createBatchAssignments(assignmentsToCreate);
     return {
       message: `Đã cấp quyền bài giảng thành công cho ${created.length} Giáo viên.`,
-      assignedCount: created.length
+      assignedCount: created.length,
+      assignments: created
     };
   }
 
