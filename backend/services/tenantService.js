@@ -10,8 +10,7 @@ class TenantService {
     if (!user) {
       throw new AppError('Không tìm thấy tài khoản Tenant Admin', 404);
     }
-    const { passwordHash, ...safeUserData } = user;
-    return safeUserData;
+    return user.toSafeObject ? user.toSafeObject() : user;
   }
 
   async getDashboardStats(tenantAdminId) {
@@ -22,7 +21,7 @@ class TenantService {
     // Đếm số lượng School Admin duy nhất đã được cấp quyền
     const uniqueSchoolAdmins = new Set(assignments.map(a => a.schoolAdminId));
 
-    // 4. Tính toán xu hướng biểu đồ thực tế 6 tháng gần nhất
+    // Tính toán xu hướng biểu đồ thực tế 6 tháng gần nhất
     const now = new Date();
     const trendData = [];
 
@@ -151,12 +150,8 @@ class TenantService {
 
   // === SCHOOL ADMIN & ASSIGNMENT MANAGEMENT ===
   async getSchoolAdmins(tenantAdminId) {
-    // 🔮 Tương lai: Lọc theo Contracts active với tenantAdminId
     const users = await userRepository.findAll('school_admin', 1, 100);
-    return users.map(user => {
-      const { passwordHash, ...safeUser } = user;
-      return safeUser;
-    });
+    return users.map(user => user.toSafeObject ? user.toSafeObject() : user);
   }
 
   async assignLessonToSchools(lessonId, tenantAdminId, schoolAdminIds) {
@@ -183,7 +178,7 @@ class TenantService {
             tenantAdminId,
             schoolAdminId,
             assignedAt: Date.now(),
-            contractId: null // 🔮 Sau này sẽ điền Contract ID tương ứng
+            contractId: null
           });
         }
       }
