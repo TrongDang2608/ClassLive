@@ -5,6 +5,7 @@ const userRepository = require('../repositories/userRepository');
 const otpRepository = require('../repositories/otpRepository');
 const refreshTokenRepository = require('../repositories/refreshTokenRepository');
 const emailService = require('./emailService');
+const cacheService = require('./cacheService');
 const AppError = require('../utils/AppError');
 
 class AuthService {
@@ -90,7 +91,10 @@ class AuthService {
     // Tự động sinh và lưu OTP
     const code = this._generateCode();
     const expiresAt = Date.now() + 5 * 60 * 1000;
+
+    // 1. Lưu đồng thời vào Firestore (bền vững) và Redis Cache (tốc độ cao TTL 300s)
     await otpRepository.saveOtp(user.id, code, expiresAt);
+    await cacheService.set(`classlive:otp:${user.id}`, code, 300);
 
     // Gửi OTP qua Email
     await emailService.sendOtpEmail(user.email, code);
@@ -118,7 +122,10 @@ class AuthService {
 
     const code = this._generateCode();
     const expiresAt = Date.now() + 5 * 60 * 1000;
+
+    // Lưu vào Firestore + Redis Cache
     await otpRepository.saveOtp(userId, code, expiresAt);
+    await cacheService.set(`classlive:otp:${userId}`, code, 300);
 
     await emailService.sendOtpEmail(user.email, code);
 
@@ -127,18 +134,31 @@ class AuthService {
 
   // 4. Bước cuối Đăng nhập: Xác thực OTP và trả về Token
   async validateAccessCode(userId, code) {
-    const otp = await otpRepository.findOtp(userId);
-    if (!otp) {
-      throw new AppError('Mã xác thực không tồn tại hoặc đã hết hạn.', 400);
+    // 1. Kiểm tra nhanh trên Redis Cache trước (Fast-path)
+    const cachedCode = await cacheService.get(`classlive:otp:${userId}`);
+    let isValid = false;
+
+    if (cachedCode && cachedCode === code) {
+      isValid = true;
+    } else {
+      // 2. Cache miss hoặc hết hạn trên Redis -> fallback kiểm tra trong Firestore
+      const otp = await otpRepository.findOtp(userId);
+      if (!otp) {
+        throw new AppError('Mã xác thực không tồn tại hoặc đã hết hạn.', 400);
+      }
+      if (otp.code !== code) {
+        throw new AppError('Mã xác thực OTP không chính xác.', 400);
+      }
+      if (otp.isExpired()) {
+        await otpRepository.deleteOtp(userId);
+        await cacheService.del(`classlive:otp:${userId}`);
+        throw new AppError('Mã xác thực OTP đã hết hạn. Vui lòng yêu cầu mã mới.', 400);
+      }
+      isValid = true;
     }
 
-    if (otp.code !== code) {
+    if (!isValid) {
       throw new AppError('Mã xác thực OTP không chính xác.', 400);
-    }
-    
-    if (otp.isExpired()) {
-      await otpRepository.deleteOtp(userId);
-      throw new AppError('Mã xác thực OTP đã hết hạn. Vui lòng yêu cầu mã mới.', 400);
     }
 
     const user = await userRepository.findById(userId);
@@ -146,8 +166,9 @@ class AuthService {
       throw new AppError('Tài khoản không tồn tại.', 404);
     }
 
-    // Xóa mã OTP sau khi dùng xong
+    // Xóa mã OTP ngay sau khi dùng xong (tránh replay attack)
     await otpRepository.deleteOtp(userId);
+    await cacheService.del(`classlive:otp:${userId}`);
 
     // Sinh Access Token (15 phút)
     const accessToken = jwt.sign(
@@ -216,8 +237,11 @@ class AuthService {
       isSetup: true
     });
 
-    // Vô hiệu hóa toàn bộ Refresh Tokens của user (đăng xuất khỏi các thiết bị)
+    // Vô hiệu hóa toàn bộ Refresh Tokens của user
     await refreshTokenRepository.deleteByUserId(userId);
+
+    // Đưa token hiện tại vào Blacklist để không dùng lại được
+    await cacheService.set(`classlive:token:blacklist:${token}`, 'revoked', 900);
 
     return { message: 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.' };
   }
@@ -247,9 +271,15 @@ class AuthService {
     };
   }
 
-  // 8. Đăng xuất: Xóa Refresh Token
-  async logout(token) {
-    await refreshTokenRepository.deleteByToken(token);
+  // 8. Đăng xuất: Xóa Refresh Token & Đưa vào Redis Blacklist
+  async logout(token, accessToken = null) {
+    if (token) {
+      await refreshTokenRepository.deleteByToken(token);
+    }
+    if (accessToken) {
+      // Blacklist Access Token trên Redis (900s = 15 phút)
+      await cacheService.set(`classlive:token:blacklist:${accessToken}`, 'revoked', 900);
+    }
     return { message: 'Đăng xuất thành công.' };
   }
 }

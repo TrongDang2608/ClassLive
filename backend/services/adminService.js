@@ -1,4 +1,5 @@
 const userRepository = require('../repositories/userRepository');
+const cacheService = require('./cacheService');
 const AppError = require('../utils/AppError');
 const jwt = require('jsonwebtoken');
 const emailService = require('./emailService');
@@ -43,37 +44,46 @@ class AdminService {
       });
     }
 
+    // Invalidate Cache liên quan tới danh sách user của Admin
+    await cacheService.delPattern('classlive:admin:*');
+
     return { id: newId, ...userData };
   }
 
   // 2. Lấy danh sách tất cả user (phân trang + lọc theo role)
-  async getUsers(roleFilter, page = 1, limit = 10) {
-    const total = await userRepository.countAll(roleFilter);
-    const users = await userRepository.findAll(roleFilter, page, limit);
-    
-    const data = users.map(u => u.toSafeObject ? u.toSafeObject() : {
-      id: u.id,
-      name: u.name,
-      username: u.username,
-      phone: u.phone,
-      email: u.email,
-      role: u.role,
-      createdBy: u.createdBy,
-      organizationId: u.organizationId,
-      createdAt: u.createdAt
-    });
+  async getUsers(roleFilter = 'all', page = 1, limit = 10) {
+    const cacheKey = `classlive:admin:users:${roleFilter}:${page}:${limit}`;
+    return await cacheService.remember(cacheKey, 600, async () => {
+      const total = await userRepository.countAll(roleFilter);
+      const users = await userRepository.findAll(roleFilter, page, limit);
+      
+      const data = users.map(u => u.toSafeObject ? u.toSafeObject() : {
+        id: u.id,
+        name: u.name,
+        username: u.username,
+        phone: u.phone,
+        email: u.email,
+        role: u.role,
+        createdBy: u.createdBy,
+        organizationId: u.organizationId,
+        createdAt: u.createdAt
+      });
 
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+      return { data, total, page, limit, totalPages: Math.ceil(total / limit) || 1 };
+    });
   }
 
   // 3. Xem chi tiết 1 User
   async getUser(identifier) {
-    const user = await userRepository.findByPhoneOrId(identifier) 
-      || await userRepository.findByUsernameOrEmail(identifier);
-    if (!user) {
-      throw new AppError('Không tìm thấy tài khoản người dùng.', 404);
-    }
-    return user.toSafeObject ? user.toSafeObject() : user;
+    const cacheKey = `classlive:admin:user_detail:${identifier}`;
+    return await cacheService.remember(cacheKey, 1800, async () => {
+      const user = await userRepository.findByPhoneOrId(identifier) 
+        || await userRepository.findByUsernameOrEmail(identifier);
+      if (!user) {
+        throw new AppError('Không tìm thấy tài khoản người dùng.', 404);
+      }
+      return user.toSafeObject ? user.toSafeObject() : user;
+    });
   }
 
   // 4. Sửa User
@@ -101,6 +111,11 @@ class AdminService {
     }
 
     await userRepository.update(user.id, updateData);
+
+    // Invalidate Cache liên quan
+    await cacheService.delPattern('classlive:admin:*');
+    await cacheService.delPattern(`classlive:*:profile:${user.id}`);
+
     return { success: true, message: 'Cập nhật tài khoản thành công.' };
   }
 
@@ -117,6 +132,10 @@ class AdminService {
     }
     
     await userRepository.delete(user.id);
+
+    // Invalidate Cache
+    await cacheService.delPattern('classlive:admin:*');
+
     return { success: true, message: 'Xóa tài khoản thành công.' };
   }
 }

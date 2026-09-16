@@ -6,6 +6,7 @@ const { getFirestore } = require('firebase-admin/firestore');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const { initRedis } = require('./config/redis');
 
 // Khởi tạo Firebase Admin
 let db;
@@ -20,6 +21,9 @@ try {
   console.error('Error initializing Firebase:', error.message);
   process.exit(1);
 }
+
+// Khởi tạo kết nối Redis (Non-blocking & Graceful Fallback)
+initRedis();
 
 // Khởi tạo Express
 const app = express();
@@ -55,7 +59,7 @@ app.use('/api/chat', chatRoutes);
 
 // Route kiểm tra
 app.get('/', (req, res) => {
-  res.send('ClassLive Backend is running!');
+  res.send('ClassLive Backend is running with Redis Caching Layer!');
 });
 
 // Error Handling Middleware (Phải nằm cuối cùng)

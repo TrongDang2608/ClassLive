@@ -1,92 +1,103 @@
 const lessonRepository = require('../repositories/lessonRepository');
 const assignmentRepository = require('../repositories/assignmentRepository');
 const userRepository = require('../repositories/userRepository');
+const cacheService = require('./cacheService');
 const AppError = require('../utils/AppError');
 
 class TenantService {
   // === PROFILE & DASHBOARD ===
   async getProfile(tenantAdminId) {
-    const user = await userRepository.findById(tenantAdminId);
-    if (!user) {
-      throw new AppError('Không tìm thấy tài khoản Tenant Admin', 404);
-    }
-    return user.toSafeObject ? user.toSafeObject() : user;
+    const cacheKey = `classlive:tenant:profile:${tenantAdminId}`;
+    return await cacheService.remember(cacheKey, 1800, async () => {
+      const user = await userRepository.findById(tenantAdminId);
+      if (!user) {
+        throw new AppError('Không tìm thấy tài khoản Tenant Admin', 404);
+      }
+      return user.toSafeObject ? user.toSafeObject() : user;
+    });
   }
 
   async getDashboardStats(tenantAdminId) {
-    const totalLessons = await lessonRepository.countLessonsByInstructor(tenantAdminId);
-    const assignments = await assignmentRepository.findByTenantAdminId(tenantAdminId);
-    const allLessons = await lessonRepository.findLessonsByInstructor(tenantAdminId, 1, 1000);
-    
-    // Đếm số lượng School Admin duy nhất đã được cấp quyền
-    const uniqueSchoolAdmins = new Set(assignments.map(a => a.schoolAdminId));
+    const cacheKey = `classlive:tenant:stats:${tenantAdminId}`;
+    return await cacheService.remember(cacheKey, 600, async () => {
+      const totalLessons = await lessonRepository.countLessonsByInstructor(tenantAdminId);
+      const assignments = await assignmentRepository.findByTenantAdminId(tenantAdminId);
+      const allLessons = await lessonRepository.findLessonsByInstructor(tenantAdminId, 1, 1000);
+      
+      const uniqueSchoolAdmins = new Set(assignments.map(a => a.schoolAdminId));
 
-    // Tính toán xu hướng biểu đồ thực tế 6 tháng gần nhất
-    const now = new Date();
-    const trendData = [];
+      const now = new Date();
+      const trendData = [];
 
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const year = d.getFullYear();
-      const month = d.getMonth();
-      const monthLabel = `Tháng ${month + 1}`;
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const year = d.getFullYear();
+        const month = d.getMonth();
+        const monthLabel = `Tháng ${month + 1}`;
 
-      const startOfMonth = new Date(year, month, 1).getTime();
-      const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999).getTime();
+        const startOfMonth = new Date(year, month, 1).getTime();
+        const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999).getTime();
 
-      const lessonsCount = allLessons.filter(l => {
-        const t = typeof l.createdAt === 'number' ? l.createdAt : new Date(l.createdAt || 0).getTime();
-        return t >= startOfMonth && t <= endOfMonth;
-      }).length;
+        const lessonsCount = allLessons.filter(l => {
+          const t = typeof l.createdAt === 'number' ? l.createdAt : new Date(l.createdAt || 0).getTime();
+          return t >= startOfMonth && t <= endOfMonth;
+        }).length;
 
-      const assignmentsCount = assignments.filter(a => {
-        const t = typeof a.assignedAt === 'number' ? a.assignedAt : new Date(a.assignedAt || 0).getTime();
-        return t >= startOfMonth && t <= endOfMonth;
-      }).length;
+        const assignmentsCount = assignments.filter(a => {
+          const t = typeof a.assignedAt === 'number' ? a.assignedAt : new Date(a.assignedAt || 0).getTime();
+          return t >= startOfMonth && t <= endOfMonth;
+        }).length;
 
-      trendData.push({
-        month: monthLabel,
-        lessons: lessonsCount,
-        assignments: assignmentsCount
-      });
-    }
+        trendData.push({
+          month: monthLabel,
+          lessons: lessonsCount,
+          assignments: assignmentsCount
+        });
+      }
 
-    return {
-      totalLessons,
-      totalAssignedSchools: uniqueSchoolAdmins.size,
-      totalAssignments: assignments.length,
-      trendData
-    };
+      return {
+        totalLessons,
+        totalAssignedSchools: uniqueSchoolAdmins.size,
+        totalAssignments: assignments.length,
+        trendData
+      };
+    });
   }
 
   // === LESSON MANAGEMENT ===
   async getLessons(tenantAdminId, page = 1, limit = 10) {
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 10;
+    const cacheKey = `classlive:tenant:lessons:${tenantAdminId}:${pageNum}:${limitNum}`;
 
-    const lessons = await lessonRepository.findLessonsByInstructor(tenantAdminId, pageNum, limitNum);
-    const totalLessons = await lessonRepository.countLessonsByInstructor(tenantAdminId);
+    return await cacheService.remember(cacheKey, 600, async () => {
+      const lessons = await lessonRepository.findLessonsByInstructor(tenantAdminId, pageNum, limitNum);
+      const totalLessons = await lessonRepository.countLessonsByInstructor(tenantAdminId);
 
-    return {
-      lessons,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        totalLessons,
-        totalPages: Math.ceil(totalLessons / limitNum) || 1
-      }
-    };
+      return {
+        lessons,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          totalLessons,
+          totalPages: Math.ceil(totalLessons / limitNum) || 1
+        }
+      };
+    });
   }
 
   async getLessonById(lessonId, tenantAdminId) {
-    const lesson = await lessonRepository.findLessonById(lessonId);
-    if (!lesson) {
-      throw new AppError('Bài giảng không tồn tại', 404);
-    }
-    if (lesson.createdBy !== tenantAdminId) {
-      throw new AppError('Bạn không có quyền truy cập bài giảng này', 403);
-    }
-    return lesson;
+    const cacheKey = `classlive:tenant:lesson_detail:${tenantAdminId}:${lessonId}`;
+    return await cacheService.remember(cacheKey, 1800, async () => {
+      const lesson = await lessonRepository.findLessonById(lessonId);
+      if (!lesson) {
+        throw new AppError('Bài giảng không tồn tại', 404);
+      }
+      if (lesson.createdBy !== tenantAdminId) {
+        throw new AppError('Bạn không có quyền truy cập bài giảng này', 403);
+      }
+      return lesson;
+    });
   }
 
   async createLesson(tenantAdminId, lessonData) {
@@ -107,6 +118,10 @@ class TenantService {
     };
 
     const lessonId = await lessonRepository.createLesson(newLessonData);
+
+    // Invalidate Cache
+    await cacheService.delPattern(`classlive:tenant:*:${tenantAdminId}*`);
+
     return { id: lessonId, ...newLessonData };
   }
 
@@ -124,12 +139,15 @@ class TenantService {
       updatedAt: Date.now()
     };
 
-    // Giữ nguyên createdBy và id
     delete payload.id;
     delete payload.createdBy;
     delete payload.createdAt;
 
     await lessonRepository.updateLesson(lessonId, payload);
+
+    // Invalidate Cache
+    await cacheService.delPattern(`classlive:tenant:*:${tenantAdminId}*`);
+
     return { id: lessonId, ...lesson, ...payload };
   }
 
@@ -142,16 +160,20 @@ class TenantService {
       throw new AppError('Bạn không có quyền xóa bài giảng này', 403);
     }
 
-    // Xóa lesson
     await lessonRepository.deleteLesson(lessonId);
-    // Cascade xóa assignments liên quan
     await assignmentRepository.deleteByLessonId(lessonId);
+
+    // Invalidate Cache
+    await cacheService.delPattern(`classlive:tenant:*:${tenantAdminId}*`);
   }
 
   // === SCHOOL ADMIN & ASSIGNMENT MANAGEMENT ===
   async getSchoolAdmins(tenantAdminId) {
-    const users = await userRepository.findAll('school_admin', 1, 100);
-    return users.map(user => user.toSafeObject ? user.toSafeObject() : user);
+    const cacheKey = `classlive:tenant:schools:${tenantAdminId}`;
+    return await cacheService.remember(cacheKey, 600, async () => {
+      const users = await userRepository.findAll('school_admin', 1, 100);
+      return users.map(user => user.toSafeObject ? user.toSafeObject() : user);
+    });
   }
 
   async assignLessonToSchools(lessonId, tenantAdminId, schoolAdminIds) {
@@ -189,6 +211,10 @@ class TenantService {
     }
 
     const created = await assignmentRepository.createAssignments(assignmentsToCreate);
+
+    // Invalidate Cache
+    await cacheService.delPattern(`classlive:tenant:*:${tenantAdminId}*`);
+
     return {
       message: `Đã cấp quyền bài giảng cho ${created.length} School Admin`,
       count: created.length,
@@ -197,36 +223,38 @@ class TenantService {
   }
 
   async getLessonAssignments(lessonId, tenantAdminId) {
-    const lesson = await lessonRepository.findLessonById(lessonId);
-    if (!lesson) {
-      throw new AppError('Bài giảng không tồn tại', 404);
-    }
-    if (lesson.createdBy !== tenantAdminId) {
-      throw new AppError('Bạn không có quyền xem thông tin bài giảng này', 403);
-    }
+    const cacheKey = `classlive:tenant:lesson_assignments:${tenantAdminId}:${lessonId}`;
+    return await cacheService.remember(cacheKey, 600, async () => {
+      const lesson = await lessonRepository.findLessonById(lessonId);
+      if (!lesson) {
+        throw new AppError('Bài giảng không tồn tại', 404);
+      }
+      if (lesson.createdBy !== tenantAdminId) {
+        throw new AppError('Bạn không có quyền xem thông tin bài giảng này', 403);
+      }
 
-    const assignments = await assignmentRepository.findByLessonId(lessonId);
-    
-    // Populate thông tin School Admin
-    const populated = await Promise.all(
-      assignments.map(async (assign) => {
-        const schoolAdmin = await userRepository.findById(assign.schoolAdminId);
-        return {
-          ...assign,
-          schoolAdmin: schoolAdmin
-            ? {
-                id: schoolAdmin.id,
-                name: schoolAdmin.name,
-                email: schoolAdmin.email,
-                phone: schoolAdmin.phone,
-                schoolName: schoolAdmin.schoolName || ''
-              }
-            : null
-        };
-      })
-    );
+      const assignments = await assignmentRepository.findByLessonId(lessonId);
+      
+      const populated = await Promise.all(
+        assignments.map(async (assign) => {
+          const schoolAdmin = await userRepository.findById(assign.schoolAdminId);
+          return {
+            ...assign,
+            schoolAdmin: schoolAdmin
+              ? {
+                  id: schoolAdmin.id,
+                  name: schoolAdmin.name,
+                  email: schoolAdmin.email,
+                  phone: schoolAdmin.phone,
+                  schoolName: schoolAdmin.schoolName || ''
+                }
+              : null
+          };
+        })
+      );
 
-    return populated;
+      return populated;
+    });
   }
 
   async revokeAssignment(assignmentId, tenantAdminId) {
@@ -239,30 +267,36 @@ class TenantService {
     }
 
     await assignmentRepository.deleteAssignment(assignmentId);
+
+    // Invalidate Cache
+    await cacheService.delPattern(`classlive:tenant:*:${tenantAdminId}*`);
   }
 
   // === CHAT SYSTEM CONTACTS ===
   async getChatContacts(tenantAdminId) {
-    const assignments = await assignmentRepository.findByTenantAdminId(tenantAdminId);
-    const uniqueSchoolAdminIds = Array.from(new Set(assignments.map(a => a.schoolAdminId)));
+    const cacheKey = `classlive:tenant:contacts:${tenantAdminId}`;
+    return await cacheService.remember(cacheKey, 600, async () => {
+      const assignments = await assignmentRepository.findByTenantAdminId(tenantAdminId);
+      const uniqueSchoolAdminIds = Array.from(new Set(assignments.map(a => a.schoolAdminId)));
 
-    const contacts = await Promise.all(
-      uniqueSchoolAdminIds.map(async (schoolAdminId) => {
-        const user = await userRepository.findById(schoolAdminId);
-        if (!user) return null;
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-          schoolName: user.schoolName || '',
-          avatarUrl: user.avatarUrl || ''
-        };
-      })
-    );
+      const contacts = await Promise.all(
+        uniqueSchoolAdminIds.map(async (schoolAdminId) => {
+          const user = await userRepository.findById(schoolAdminId);
+          if (!user) return null;
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            schoolName: user.schoolName || '',
+            avatarUrl: user.avatarUrl || ''
+          };
+        })
+      );
 
-    return contacts.filter(Boolean);
+      return contacts.filter(Boolean);
+    });
   }
 }
 
