@@ -4,6 +4,8 @@ const {
   LoginPasswordDto,
   CreateAccessCodeDto,
   ValidateAccessCodeDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
   RefreshTokenDto,
   LogoutDto
 } = require('../dtos/authDto');
@@ -70,6 +72,32 @@ class AuthController {
       success: true,
       ...result,
       data: result
+    });
+  });
+
+  // POST /api/auth/forgot-password (Yêu cầu link đặt lại mật khẩu)
+  forgotPassword = catchAsync(async (req, res, next) => {
+    const dto = new ForgotPasswordDto(req.body);
+    dto.validate();
+
+    const result = await authService.forgotPassword(dto.email);
+
+    res.status(200).json({
+      success: true,
+      message: result.message
+    });
+  });
+
+  // POST /api/auth/reset-password (Đặt lại mật khẩu với token)
+  resetPassword = catchAsync(async (req, res, next) => {
+    const dto = new ResetPasswordDto(req.body);
+    dto.validate();
+
+    const result = await authService.resetPassword(dto.token, dto.newPassword);
+
+    res.status(200).json({
+      success: true,
+      message: result.message
     });
   });
 

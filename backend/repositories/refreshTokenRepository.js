@@ -42,6 +42,16 @@ class RefreshTokenRepository {
   async deleteByToken(token) {
     await this.collection.doc(token).delete();
   }
+
+  // Xóa tất cả Refresh Token của một User (khi đổi/quên mật khẩu)
+  async deleteByUserId(userId) {
+    const snapshot = await this.collection.where('userId', '==', userId).get();
+    const batch = this.db.batch();
+    snapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+  }
 }
 
 module.exports = new RefreshTokenRepository();

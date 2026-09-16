@@ -66,6 +66,38 @@ class ValidateAccessCodeDto {
   }
 }
 
+class ForgotPasswordDto {
+  constructor(data) {
+    this.email = data.email ? data.email.trim().toLowerCase() : '';
+  }
+
+  validate() {
+    if (!this.email) {
+      throw new AppError('Vui lòng cung cấp địa chỉ Email.', 400);
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(this.email)) {
+      throw new AppError('Định dạng Email không hợp lệ.', 400);
+    }
+  }
+}
+
+class ResetPasswordDto {
+  constructor(data) {
+    this.token = data.token ? data.token.trim() : '';
+    this.newPassword = data.newPassword || data.password || '';
+  }
+
+  validate() {
+    if (!this.token) {
+      throw new AppError('Token đặt lại mật khẩu là bắt buộc.', 400);
+    }
+    if (!this.newPassword || this.newPassword.length < 6) {
+      throw new AppError('Mật khẩu mới phải có ít nhất 6 ký tự.', 400);
+    }
+  }
+}
+
 class RefreshTokenDto {
   constructor(data) {
     this.refreshToken = data.refreshToken;
@@ -95,6 +127,8 @@ module.exports = {
   LoginPasswordDto,
   CreateAccessCodeDto,
   ValidateAccessCodeDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
   RefreshTokenDto,
   LogoutDto
 };

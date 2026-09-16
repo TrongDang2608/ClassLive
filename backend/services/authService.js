@@ -65,18 +65,21 @@ class AuthService {
 
   // 2. Bước 1 Đăng nhập: Kiểm tra Username / Password -> Gửi OTP qua Email
   async loginPassword(username, password) {
-    const user = await userRepository.findByUsernameOrEmail(username);
-    if (!user) {
+    const users = await userRepository.findAllByUsernameOrEmail(username);
+    if (!users || users.length === 0) {
       throw new AppError('Tên đăng nhập / Email hoặc Mật khẩu không chính xác.', 401);
     }
 
-    // Kiểm tra mật khẩu
-    if (!user.password) {
-      throw new AppError('Tài khoản chưa được thiết lập mật khẩu. Vui lòng kiểm tra email kích hoạt.', 400);
+    // Tìm tài khoản khớp mật khẩu (xử lý an toàn khi nhiều role dùng chung email)
+    let user = null;
+    for (const u of users) {
+      if (u.password && await bcrypt.compare(password, u.password)) {
+        user = u;
+        break;
+      }
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    if (!user) {
       throw new AppError('Tên đăng nhập / Email hoặc Mật khẩu không chính xác.', 401);
     }
 
@@ -166,7 +169,60 @@ class AuthService {
     };
   }
 
-  // 5. Cấp lại Access Token mới dựa vào Refresh Token
+  // 5. Quên mật khẩu: Gửi email link reset mật khẩu
+  async forgotPassword(email) {
+    const user = await userRepository.findByEmail(email);
+    if (!user) {
+      throw new AppError('Địa chỉ email không tồn tại trong hệ thống.', 404);
+    }
+
+    // Tạo Reset Token (15 phút)
+    const resetToken = jwt.sign(
+      { id: user.id, purpose: 'reset_password' },
+      process.env.JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    await emailService.sendResetPasswordEmail(user.email, user.name, resetToken);
+
+    return {
+      message: 'Mã liên kết đặt lại mật khẩu đã được gửi đến email của bạn. Vui lòng kiểm tra hòm thư (hiệu lực trong 15 phút).'
+    };
+  }
+
+  // 6. Đặt lại mật khẩu mới từ Reset Token
+  async resetPassword(token, newPassword) {
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      throw new AppError('Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.', 400);
+    }
+
+    if (decoded.purpose !== 'reset_password') {
+      throw new AppError('Token không đúng mục đích đặt lại mật khẩu.', 400);
+    }
+
+    const userId = decoded.id;
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new AppError('Tài khoản không tồn tại trong hệ thống.', 404);
+    }
+
+    // Băm mật khẩu mới
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await userRepository.update(userId, {
+      password: hashedPassword,
+      isSetup: true
+    });
+
+    // Vô hiệu hóa toàn bộ Refresh Tokens của user (đăng xuất khỏi các thiết bị)
+    await refreshTokenRepository.deleteByUserId(userId);
+
+    return { message: 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.' };
+  }
+
+  // 7. Cấp lại Access Token mới dựa vào Refresh Token
   async refreshToken(token) {
     const tokenData = await refreshTokenRepository.findByToken(token);
     if (!tokenData) {
@@ -191,7 +247,7 @@ class AuthService {
     };
   }
 
-  // 6. Đăng xuất: Xóa Refresh Token
+  // 8. Đăng xuất: Xóa Refresh Token
   async logout(token) {
     await refreshTokenRepository.deleteByToken(token);
     return { message: 'Đăng xuất thành công.' };

@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './features/auth/LoginPage';
 import OtpPage from './features/auth/OtpPage';
 import SetupAccountPage from './features/auth/SetupAccountPage';
+import ForgotPasswordPage from './features/auth/ForgotPasswordPage';
+import ResetPasswordPage from './features/auth/ResetPasswordPage';
 import AdminDashboard from './features/admin/AdminDashboard';
 import TenantDashboard from './features/tenant/TenantDashboard';
 import SchoolDashboard from './features/school/SchoolDashboard';
@@ -35,6 +37,12 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/otp" element={<OtpPage />} />
         <Route path="/setup-account" element={<SetupAccountPage />} />
+        
+        {/* Forgot & Reset Password (Hỗ trợ cả dấu gạch ngang và gạch dưới) */}
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/forgot_password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/reset_password" element={<ResetPasswordPage />} />
         
         {/* Dashboard Routes (Protected) */}
         <Route 
@@ -75,4 +83,3 @@ function App() {
 }
 
 export default App;
-
