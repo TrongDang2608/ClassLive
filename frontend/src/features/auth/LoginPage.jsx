@@ -18,11 +18,10 @@ const LoginPage = () => {
 
     try {
       const response = await AuthService.login(username, password);
-      // Backend trả về userId và maskedPhone
       navigate('/otp', { 
         state: { 
           userId: response.userId,
-          maskedPhone: response.maskedPhone 
+          maskedEmail: response.maskedEmail || response.data?.maskedEmail
         } 
       });
     } catch (err) {

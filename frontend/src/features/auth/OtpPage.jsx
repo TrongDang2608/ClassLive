@@ -7,7 +7,8 @@ import './auth.css';
 const OtpPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { userId, maskedPhone } = location.state || {};
+  const { userId, maskedEmail } = location.state || {};
+  const displayEmail = maskedEmail || 'email của bạn';
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
@@ -72,7 +73,6 @@ const OtpPage = () => {
 
     try {
       const response = await AuthService.validateOtp(userId, code);
-      // Save token and refreshToken (in real app, use Context or Redux for better state management)
       localStorage.setItem('token', response.token);
       localStorage.setItem('refreshToken', response.refreshToken);
       localStorage.setItem('role', response.role);
@@ -105,7 +105,7 @@ const OtpPage = () => {
         <div className="login-brand">
           <div className="gold-line"></div>
           <div className="logo">Class<span>Live</span></div>
-          <p>Xác thực hai bước giúp bảo vệ tài khoản của bạn an toàn tuyệt đối. Vui lòng kiểm tra điện thoại.</p>
+          <p>Xác thực hai bước giúp bảo vệ tài khoản của bạn an toàn tuyệt đối. Vui lòng kiểm tra hòm thư email của bạn.</p>
         </div>
       </div>
       
@@ -113,8 +113,8 @@ const OtpPage = () => {
         <div className="login-form-card animate-slide-right" style={{ textAlign: 'center' }}>
           <h2>Xác thực danh tính</h2>
           <p className="subtitle">
-            Mã 6 chữ số đã được gửi đến số điện thoại <br/>
-            <strong style={{ color: 'var(--text)', marginTop: '8px', display: 'block' }}>{maskedPhone || '+84 ******XXX'}</strong>
+            Mã 6 chữ số đã được gửi đến email <br/>
+            <strong style={{ color: 'var(--text)', marginTop: '8px', display: 'block' }}>{displayEmail}</strong>
           </p>
           
           <form onSubmit={handleSubmit}>
