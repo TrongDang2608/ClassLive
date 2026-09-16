@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { BookOpen, MonitorPlay, Clock, Loader2 } from 'lucide-react';
 import AuthService from './AuthService';
 import './auth.css';
@@ -79,7 +79,15 @@ const LoginPage = () => {
               />
             </div>
             <div className="form-group">
-              <label>Mật khẩu</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <label style={{ margin: 0 }}>Mật khẩu</label>
+                <Link 
+                  to="/forgot-password" 
+                  style={{ fontSize: '13px', color: '#d97706', textDecoration: 'none', fontWeight: '500' }}
+                >
+                  Quên mật khẩu?
+                </Link>
+              </div>
               <input 
                 type="password" 
                 className="form-input" 
@@ -92,7 +100,7 @@ const LoginPage = () => {
             
             {error && <p style={{ color: 'var(--primary)', fontSize: '13px', marginBottom: '16px', fontWeight: '500' }}>{error}</p>}
             
-            <button type="submit" className="btn btn-gold" style={{ width: '100%' }} disabled={loading}>
+            <button type="submit" className="btn btn-gold" style={{ width: '100%', marginTop: '8px' }} disabled={loading}>
               {loading ? <Loader2 size={18} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} /> : 'Đăng Nhập'}
             </button>
           </form>

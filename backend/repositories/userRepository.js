@@ -19,16 +19,22 @@ class UserRepository {
     return new User(snapshot.docs[0].id, snapshot.docs[0].data());
   }
 
-  // Hỗ trợ đăng nhập cả Username và Email
-  async findByUsernameOrEmail(identifier) {
-    // Thử tìm theo username trước
+  // Hỗ trợ lấy danh sách tài khoản theo Username hoặc Email
+  async findAllByUsernameOrEmail(identifier) {
     let snapshot = await this.collection.where('username', '==', identifier).get();
+    let docs = snapshot.docs;
+
     if (snapshot.empty) {
-      // Nếu không thấy, thử tìm theo email
       snapshot = await this.collection.where('email', '==', identifier).get();
+      docs = snapshot.docs;
     }
-    if (snapshot.empty) return null;
-    return new User(snapshot.docs[0].id, snapshot.docs[0].data());
+    if (!docs || docs.length === 0) return [];
+    return docs.map(doc => new User(doc.id, doc.data()));
+  }
+
+  async findByUsernameOrEmail(identifier) {
+    const users = await this.findAllByUsernameOrEmail(identifier);
+    return users.length > 0 ? users[0] : null;
   }
 
   async findByPhone(phone) {
@@ -45,14 +51,11 @@ class UserRepository {
     return new User(doc.id, doc.data());
   }
 
-  // TÌM CẢ THEO PHONE HOẶC ID (Linh hoạt như yêu cầu)
   async findByPhoneOrId(identifier) {
-    // 1. Thử tìm theo ID trước (vì ID thường dài và không trùng format sđt)
     let doc = await this.collection.doc(identifier).get();
     if (doc.exists) {
       return new User(doc.id, doc.data());
     }
-    // 2. Thử tìm theo Phone
     const snapshot = await this.collection.where('phone', '==', identifier).limit(1).get();
     if (!snapshot.empty) {
       return new User(snapshot.docs[0].id, snapshot.docs[0].data());
@@ -116,7 +119,6 @@ class UserRepository {
   }
 
   async create(userData) {
-    // Firebase tự sinh ID nếu dùng add()
     const docRef = await this.collection.add(userData);
     return docRef.id;
   }

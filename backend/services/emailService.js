@@ -108,6 +108,59 @@ class EmailService {
       return false;
     }
   }
+
+  async sendResetPasswordEmail(toEmail, fullName, token) {
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.BREVO_SMTP_USER;
+
+    const mailOptions = {
+      from: `"ClassLive Security" <${senderEmail}>`,
+      to: toEmail,
+      subject: '🔐 Đặt lại mật khẩu tài khoản ClassLive',
+      html: `
+        <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0f172a; padding: 40px 20px; border-radius: 16px; color: #f8fafc;">
+          <div style="background-color: #1e293b; padding: 40px; border-radius: 12px; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <span style="font-size: 28px; font-weight: 800; color: #fbbf24; letter-spacing: -0.5px;">Class<span style="color: #ffffff;">Live</span></span>
+            </div>
+            <h2 style="color: #ffffff; font-size: 22px; margin-bottom: 16px; text-align: center;">Yêu Cầu Đặt Lại Mật Khẩu</h2>
+            <p style="color: #94a3b8; font-size: 15px; line-height: 1.6; margin-bottom: 24px; text-align: center;">
+              Xin chào <strong>${fullName || 'bạn'}</strong>,<br>
+              Hệ thống nhận được yêu cầu đặt lại mật khẩu cho tài khoản ClassLive của bạn.<br>
+              Vui lòng bấm vào nút bên dưới để tạo mật khẩu mới.
+            </p>
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${resetLink}" style="background-color: #d97706; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4);">
+                Đặt Lại Mật Khẩu Ngay
+              </a>
+            </div>
+            <p style="color: #f59e0b; font-size: 13px; font-weight: 500; text-align: center; margin-bottom: 8px;">
+              ⏱️ Đường dẫn này chỉ có hiệu lực trong 15 phút.
+            </p>
+            <p style="color: #64748b; font-size: 13px; line-height: 1.5; text-align: center;">
+              Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này hoặc báo lại cho quản trị viên.
+            </p>
+          </div>
+          <div style="text-align: center; margin-top: 24px; color: #64748b; font-size: 12px;">
+            &copy; ${new Date().getFullYear()} ClassLive Education Platform.
+          </div>
+        </div>
+      `
+    };
+
+    try {
+      if (this.transporter && process.env.BREVO_SMTP_USER) {
+        const info = await this.transporter.sendMail(mailOptions);
+        console.log('Reset Password Email sent successfully:', info.messageId);
+      } else {
+        console.log(`[DEV MODE] Reset Password Link for ${toEmail}: ${resetLink}`);
+      }
+      return true;
+    } catch (err) {
+      console.error('Error sending reset password email:', err.message);
+      return false;
+    }
+  }
 }
 
 module.exports = new EmailService();
