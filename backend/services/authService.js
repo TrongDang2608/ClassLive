@@ -4,7 +4,6 @@ const crypto = require('crypto');
 const userRepository = require('../repositories/userRepository');
 const otpRepository = require('../repositories/otpRepository');
 const refreshTokenRepository = require('../repositories/refreshTokenRepository');
-const smsService = require('./smsService');
 const emailService = require('./emailService');
 const AppError = require('../utils/AppError');
 
@@ -12,6 +11,18 @@ class AuthService {
   // Sinh OTP 6 số ngẫu nhiên
   _generateCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  // Che email dạng d*****8@gmail.com
+  _maskEmail(email) {
+    if (!email || !email.includes('@')) return email || '';
+    const [name, domain] = email.split('@');
+    if (name.length <= 2) {
+      return `${name[0]}***@${domain}`;
+    }
+    const firstChar = name[0];
+    const lastChar = name[name.length - 1];
+    return `${firstChar}*****${lastChar}@${domain}`;
   }
 
   // 1. Thiết lập tài khoản từ Token Link (gửi qua email)
@@ -52,7 +63,7 @@ class AuthService {
     return { message: 'Thiết lập tài khoản thành công.' };
   }
 
-  // 2. Bước 1 Đăng nhập: Kiểm tra Username / Password
+  // 2. Bước 1 Đăng nhập: Kiểm tra Username / Password -> Gửi OTP qua Email
   async loginPassword(username, password) {
     const user = await userRepository.findByUsernameOrEmail(username);
     if (!user) {
@@ -69,57 +80,46 @@ class AuthService {
       throw new AppError('Tên đăng nhập / Email hoặc Mật khẩu không chính xác.', 401);
     }
 
+    if (!user.email) {
+      throw new AppError('Tài khoản chưa được cấu hình địa chỉ Email để nhận mã OTP.', 400);
+    }
+
     // Tự động sinh và lưu OTP
     const code = this._generateCode();
     const expiresAt = Date.now() + 5 * 60 * 1000;
     await otpRepository.saveOtp(user.id, code, expiresAt);
 
-    if (!user.phone) {
-      throw new AppError('Tài khoản chưa có số điện thoại để nhận mã OTP.', 400);
-    }
+    // Gửi OTP qua Email
+    await emailService.sendOtpEmail(user.email, code);
 
-    await smsService.sendOtpSms(user.phone, code);
-
-    // Che số điện thoại dạng +84 ******678
-    const rawPhone = user.phone;
-    let maskedPhone = rawPhone;
-    if (rawPhone.length > 6) {
-      const prefix = rawPhone.startsWith('+') ? rawPhone.slice(0, 3) : rawPhone.slice(0, 2);
-      const suffix = rawPhone.slice(-3);
-      maskedPhone = `${prefix} ******${suffix}`;
-    }
+    const maskedEmail = this._maskEmail(user.email);
 
     return {
-      message: 'Đăng nhập thành công bước 1. Mã OTP đã được gửi.',
+      message: 'Đăng nhập bước 1 thành công. Mã OTP đã được gửi đến hòm thư Email.',
       userId: user.id,
-      maskedPhone: maskedPhone
+      maskedEmail: maskedEmail,
+      maskedPhone: maskedEmail // Tránh breaking change với các client cũ
     };
   }
 
-  // 3. Bước 2 Đăng nhập: Gửi lại mã OTP 2FA
+  // 3. Bước 2 Đăng nhập: Gửi lại mã OTP 2FA qua Email
   async requestAccessCode(userId, type) {
     const user = await userRepository.findById(userId);
     if (!user) {
       throw new AppError('Tài khoản không tồn tại.', 404);
     }
 
+    if (!user.email) {
+      throw new AppError('Tài khoản không có địa chỉ email.', 400);
+    }
+
     const code = this._generateCode();
     const expiresAt = Date.now() + 5 * 60 * 1000;
     await otpRepository.saveOtp(userId, code, expiresAt);
 
-    if (type === 'phone') {
-      if (!user.phone) {
-        throw new AppError('Tài khoản không có số điện thoại.', 400);
-      }
-      await smsService.sendOtpSms(user.phone, code);
-    } else {
-      if (!user.email) {
-        throw new AppError('Tài khoản không có địa chỉ email.', 400);
-      }
-      await emailService.sendOtpEmail(user.email, code);
-    }
+    await emailService.sendOtpEmail(user.email, code);
 
-    return { message: 'Đã gửi mã xác thực thành công.' };
+    return { message: 'Đã gửi mã xác thực OTP về Email thành công.' };
   }
 
   // 4. Bước cuối Đăng nhập: Xác thực OTP và trả về Token

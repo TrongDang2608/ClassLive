@@ -37,15 +37,15 @@ class LoginPasswordDto {
 class CreateAccessCodeDto {
   constructor(data) {
     this.userId = data.userId;
-    this.type = data.type || 'phone'; // 'phone' hoặc 'email'
+    this.type = data.type || 'email';
   }
 
   validate() {
     if (!this.userId) {
       throw new AppError('Thiếu thông tin người dùng (userId).', 400);
     }
-    if (this.type !== 'phone' && this.type !== 'email') {
-      throw new AppError('Loại nhận mã không hợp lệ (chỉ chấp nhận phone hoặc email).', 400);
+    if (this.type && this.type !== 'email') {
+      throw new AppError('Hệ thống hiện tại chỉ hỗ trợ xác thực mã OTP qua Email.', 400);
     }
   }
 }

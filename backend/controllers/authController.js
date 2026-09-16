@@ -38,15 +38,15 @@ class AuthController {
       success: true,
       message: result.message,
       userId: result.userId,
-      maskedPhone: result.maskedPhone,
+      maskedEmail: result.maskedEmail,
       data: {
         userId: result.userId,
-        maskedPhone: result.maskedPhone
+        maskedEmail: result.maskedEmail
       }
     });
   });
 
-  // POST /api/auth/createAccessCode (Bước 2: gửi lại OTP)
+  // POST /api/auth/createAccessCode (Bước 2: gửi lại OTP qua Email)
   createAccessCode = catchAsync(async (req, res, next) => {
     const dto = new CreateAccessCodeDto(req.body);
     dto.validate();
