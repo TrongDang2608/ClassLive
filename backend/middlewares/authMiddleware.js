@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
+const cacheService = require('../services/cacheService');
 
-exports.verifyToken = (req, res, next) => {
+exports.verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -9,6 +10,17 @@ exports.verifyToken = (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
 
+  // 1. Kiểm tra Token Blacklist trong Redis (nếu user đã Logout hoặc Reset Password)
+  try {
+    const isBlacklisted = await cacheService.exists(`classlive:token:blacklist:${token}`);
+    if (isBlacklisted) {
+      return res.status(401).json({ error: 'Phiên đăng nhập đã bị thu hồi. Vui lòng đăng nhập lại.' });
+    }
+  } catch (err) {
+    // Nếu Redis lỗi/offline, bỏ qua và tiếp tục verify JWT
+  }
+
+  // 2. Giải mã và kiểm tra hạn của JWT
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; // Contains id and role
