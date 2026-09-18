@@ -7,6 +7,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const { initRedis } = require('./config/redis');
+const { initWorkers } = require('./workers');
+const { setupBullBoard } = require('./config/bullBoard');
 
 // Khởi tạo Firebase Admin
 let db;
@@ -25,6 +27,9 @@ try {
 // Khởi tạo kết nối Redis (Non-blocking & Graceful Fallback)
 initRedis();
 
+// Khởi động các Background Workers
+initWorkers();
+
 // Khởi tạo Express
 const app = express();
 app.use(cors());
@@ -32,6 +37,9 @@ app.use(express.json());
 
 // Phục vụ các file trong thư mục uploads tĩnh
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Mount Bull-Board Dashboard để giám sát hàng đợi
+app.use('/admin/queues', setupBullBoard());
 
 // Khởi tạo Server & Socket.io
 const server = http.createServer(app);
@@ -59,7 +67,7 @@ app.use('/api/chat', chatRoutes);
 
 // Route kiểm tra
 app.get('/', (req, res) => {
-  res.send('ClassLive Backend is running with Redis Caching Layer!');
+  res.send('ClassLive Backend is running with Redis Caching Layer & BullMQ Background Workers!');
 });
 
 // Error Handling Middleware (Phải nằm cuối cùng)
@@ -70,4 +78,5 @@ app.use(globalErrorHandler);
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`📊 Bull-Board Queue Dashboard sẵn sàng tại: http://localhost:${PORT}/admin/queues`);
 });

@@ -1,8 +1,7 @@
 const userRepository = require('../repositories/userRepository');
 const cacheService = require('./cacheService');
-const AppError = require('../utils/AppError');
 const jwt = require('jsonwebtoken');
-const emailService = require('./emailService');
+const { addEmailJob } = require('../queues');
 
 class AdminService {
   // 1. Thêm User mới (dành cho Admin tạo cấp dưới)
@@ -36,11 +35,15 @@ class AdminService {
 
     const newId = await userRepository.create(userData);
 
-    // Gửi email cài đặt tài khoản
+    // Gửi email cài đặt tài khoản qua BullMQ Queue
     if (email && email.trim() !== '') {
       const setupToken = jwt.sign({ id: newId }, process.env.JWT_SECRET, { expiresIn: '24h' });
-      emailService.sendSetupAccountEmail(email, name, setupToken).catch(err => {
-        console.error('Lỗi khi gửi email setup cho:', email, err);
+      addEmailJob('sendSetupAccountEmail', { 
+        toEmail: email, 
+        fullName: name, 
+        token: setupToken 
+      }).catch(err => {
+        console.warn('⚠️ [BullMQ Dispatch Error]:', err.message);
       });
     }
 

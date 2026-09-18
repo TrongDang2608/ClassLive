@@ -2,7 +2,8 @@ const userRepository = require('../repositories/userRepository');
 const lessonRepository = require('../repositories/lessonRepository');
 const assignmentRepository = require('../repositories/assignmentRepository');
 const teacherAssignmentRepository = require('../repositories/teacherAssignmentRepository');
-const emailService = require('./emailService');
+const { addEmailJob } = require('../queues');
+const jwt = require('jsonwebtoken');
 const cacheService = require('./cacheService');
 const AppError = require('../utils/AppError');
 
@@ -207,12 +208,15 @@ class SchoolService {
 
     const teacherId = await userRepository.create(newTeacherData);
 
-    // Gửi email thiết lập tài khoản
-    try {
-      await emailService.sendSetupEmail(teacherData.email, teacherId, teacherData.name);
-    } catch (err) {
-      console.error('Lỗi khi gửi email thiết lập Giáo viên:', err.message);
-    }
+    // Gửi email thiết lập tài khoản qua BullMQ Queue
+    const setupToken = jwt.sign({ id: teacherId }, process.env.JWT_SECRET, { expiresIn: '24h' });
+    addEmailJob('sendSetupAccountEmail', { 
+      toEmail: teacherData.email, 
+      fullName: teacherData.name, 
+      token: setupToken 
+    }).catch(err => {
+      console.warn('⚠️ [BullMQ Dispatch Error]:', err.message);
+    });
 
     // Xóa cache liên quan đến danh sách giáo viên & stats của trường
     await cacheService.delPattern(`classlive:school:*:${schoolAdminId}*`);
