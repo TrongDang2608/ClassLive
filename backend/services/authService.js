@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const userRepository = require('../repositories/userRepository');
 const otpRepository = require('../repositories/otpRepository');
 const refreshTokenRepository = require('../repositories/refreshTokenRepository');
-const emailService = require('./emailService');
+const { addEmailJob } = require('../queues');
 const cacheService = require('./cacheService');
 const AppError = require('../utils/AppError');
 
@@ -64,7 +64,7 @@ class AuthService {
     return { message: 'Thiết lập tài khoản thành công.' };
   }
 
-  // 2. Bước 1 Đăng nhập: Kiểm tra Username / Password -> Gửi OTP qua Email
+  // 2. Bước 1 Đăng nhập: Kiểm tra Username / Password -> Gửi OTP qua Email (BullMQ Queue)
   async loginPassword(username, password) {
     const users = await userRepository.findAllByUsernameOrEmail(username);
     if (!users || users.length === 0) {
@@ -96,8 +96,10 @@ class AuthService {
     await otpRepository.saveOtp(user.id, code, expiresAt);
     await cacheService.set(`classlive:otp:${user.id}`, code, 300);
 
-    // Gửi OTP qua Email
-    await emailService.sendOtpEmail(user.email, code);
+    // 2. Đẩy công việc gửi OTP vào BullMQ Hàng Đợi (Non-blocking: < 5ms)
+    addEmailJob('sendOtpEmail', { toEmail: user.email, code }).catch(err => {
+      console.warn('⚠️ [BullMQ Dispatch Error]:', err.message);
+    });
 
     const maskedEmail = this._maskEmail(user.email);
 
@@ -127,7 +129,10 @@ class AuthService {
     await otpRepository.saveOtp(userId, code, expiresAt);
     await cacheService.set(`classlive:otp:${userId}`, code, 300);
 
-    await emailService.sendOtpEmail(user.email, code);
+    // Đẩy vào BullMQ Queue
+    addEmailJob('sendOtpEmail', { toEmail: user.email, code }).catch(err => {
+      console.warn('⚠️ [BullMQ Dispatch Error]:', err.message);
+    });
 
     return { message: 'Đã gửi mã xác thực OTP về Email thành công.' };
   }
@@ -190,7 +195,7 @@ class AuthService {
     };
   }
 
-  // 5. Quên mật khẩu: Gửi email link reset mật khẩu
+  // 5. Quên mật khẩu: Gửi email link reset mật khẩu (BullMQ Queue)
   async forgotPassword(email) {
     const user = await userRepository.findByEmail(email);
     if (!user) {
@@ -204,7 +209,14 @@ class AuthService {
       { expiresIn: '15m' }
     );
 
-    await emailService.sendResetPasswordEmail(user.email, user.name, resetToken);
+    // Đẩy vào BullMQ Hàng Đợi
+    addEmailJob('sendResetPasswordEmail', { 
+      toEmail: user.email, 
+      fullName: user.name, 
+      token: resetToken 
+    }).catch(err => {
+      console.warn('⚠️ [BullMQ Dispatch Error]:', err.message);
+    });
 
     return {
       message: 'Mã liên kết đặt lại mật khẩu đã được gửi đến email của bạn. Vui lòng kiểm tra hòm thư (hiệu lực trong 15 phút).'

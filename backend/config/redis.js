@@ -3,6 +3,13 @@ const Redis = require('ioredis');
 let redisClient = null;
 let isRedisConnected = false;
 
+const redisConnectionOptions = {
+  host: process.env.REDIS_HOST || '127.0.0.1',
+  port: parseInt(process.env.REDIS_PORT, 10) || 6379,
+  password: process.env.REDIS_PASSWORD || undefined,
+  maxRetriesPerRequest: null
+};
+
 /**
  * Khởi tạo kết nối Redis với cơ chế tự phục hồi và Graceful Fallback
  */
@@ -39,7 +46,6 @@ function initRedis() {
 
   redisClient.on('error', (err) => {
     isRedisConnected = false;
-    // Log nhẹ nhàng dạng warning để không làm sập ứng dụng
     console.warn(`⚠️ [Redis Warning]: ${err.message}. Hệ thống đang dùng Firestore trực tiếp.`);
   });
 
@@ -70,5 +76,6 @@ function isRedisReady() {
 module.exports = {
   initRedis,
   getRedisClient,
-  isRedisReady
+  isRedisReady,
+  redisConnectionOptions
 };
