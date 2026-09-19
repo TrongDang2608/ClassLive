@@ -67,6 +67,11 @@ const TenantService = {
     return res.data;
   },
 
+  revokeLessonAssignment: async (assignmentId) => {
+    const res = await axiosClient.delete(`/tenant/assignments/${assignmentId}`);
+    return res.data;
+  },
+
   // === CHAT SYSTEM CONTACTS ===
   getChatContacts: async () => {
     const res = await axiosClient.get('/tenant/chat-contacts');

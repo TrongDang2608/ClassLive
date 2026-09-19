@@ -19,8 +19,9 @@ const TenantAssignmentListModal = ({ isOpen, onClose, lesson, onRevokeSuccess })
   const fetchAssignments = async () => {
     setFetching(true);
     try {
-      const data = await TenantService.getLessonAssignments(lesson.id);
-      setAssignments(data || []);
+      const res = await TenantService.getLessonAssignments(lesson.id);
+      const list = Array.isArray(res) ? res : (res?.data || []);
+      setAssignments(list);
     } catch (error) {
       console.error('Lỗi lấy danh sách cấp quyền:', error);
       toast.error('Không thể lấy danh sách đơn vị được cấp quyền.');
@@ -33,9 +34,13 @@ const TenantAssignmentListModal = ({ isOpen, onClose, lesson, onRevokeSuccess })
     if (!window.confirm('Bạn có chắc chắn muốn thu hồi quyền truy cập học liệu của đơn vị này?')) return;
     setRevokingId(assignmentId);
     try {
-      await TenantService.revokeLessonAssignment(assignmentId);
+      if (TenantService.revokeLessonAssignment) {
+        await TenantService.revokeLessonAssignment(assignmentId);
+      } else {
+        await TenantService.revokeAssignment(assignmentId);
+      }
       toast.success('Thu hồi quyền truy cập thành công!');
-      setAssignments(prev => prev.filter(item => item.id !== assignmentId));
+      setAssignments(prev => (Array.isArray(prev) ? prev : []).filter(item => item.id !== assignmentId));
       if (onRevokeSuccess) onRevokeSuccess();
     } catch (error) {
       console.error('Lỗi thu hồi quyền:', error);
@@ -53,6 +58,8 @@ const TenantAssignmentListModal = ({ isOpen, onClose, lesson, onRevokeSuccess })
   };
 
   if (!isOpen || !lesson) return null;
+
+  const safeAssignments = Array.isArray(assignments) ? assignments : [];
 
   return createPortal(
     <div className="tenant-modal-overlay animate-fade-in" onClick={onClose}>
@@ -77,7 +84,7 @@ const TenantAssignmentListModal = ({ isOpen, onClose, lesson, onRevokeSuccess })
             <div style={{ padding: '40px', textAlign: 'center' }}>
               <Loader2 size={26} className="animate-spin" color="var(--tenant-primary)" />
             </div>
-          ) : assignments.length === 0 ? (
+          ) : safeAssignments.length === 0 ? (
             <div style={{ padding: '30px', textAlign: 'center', background: 'var(--bg-warm)', borderRadius: 'var(--radius-sm)' }}>
               <ShieldAlert size={36} color="var(--text-muted)" style={{ marginBottom: '8px' }} />
               <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>
@@ -86,7 +93,7 @@ const TenantAssignmentListModal = ({ isOpen, onClose, lesson, onRevokeSuccess })
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {assignments.map(item => {
+              {safeAssignments.map(item => {
                 const isRevoking = revokingId === item.id;
                 return (
                   <div 

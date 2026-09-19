@@ -23,8 +23,9 @@ const TenantAssignModal = ({ isOpen, onClose, lesson, onSuccess }) => {
   const fetchSchoolAdmins = async () => {
     setFetching(true);
     try {
-      const data = await TenantService.getSchoolAdmins();
-      setSchoolAdmins(data || []);
+      const res = await TenantService.getSchoolAdmins();
+      const adminList = Array.isArray(res) ? res : (res?.data || []);
+      setSchoolAdmins(adminList);
       const assignedIds = lesson.assignedSchoolIds || [];
       setSelectedIds(assignedIds);
     } catch (error) {
@@ -35,7 +36,8 @@ const TenantAssignModal = ({ isOpen, onClose, lesson, onSuccess }) => {
     }
   };
 
-  const filteredAdmins = schoolAdmins.filter(admin => {
+  const safeSchoolAdmins = Array.isArray(schoolAdmins) ? schoolAdmins : [];
+  const filteredAdmins = safeSchoolAdmins.filter(admin => {
     const term = searchTerm.toLowerCase();
     return (
       (admin.name && admin.name.toLowerCase().includes(term)) ||

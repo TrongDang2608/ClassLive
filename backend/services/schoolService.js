@@ -200,6 +200,7 @@ class SchoolService {
       phone: teacherData.phone.trim(),
       role: 'teacher',
       schoolName: schoolAdmin.schoolName || schoolAdmin.name,
+      schoolAdminId: schoolAdminId,
       organizationId: schoolAdmin.organizationId || `school-${schoolAdminId}`,
       createdBy: schoolAdminId,
       createdAt: Date.now(),
@@ -299,8 +300,11 @@ class SchoolService {
 
     const created = await teacherAssignmentRepository.createBatchAssignments(assignmentsToCreate);
 
-    // Invalidate Cache
+    // Invalidate Cache cho cả School Admin và các Giáo viên được cấp quyền
     await cacheService.delPattern(`classlive:school:*:${schoolAdminId}*`);
+    for (const teacherId of teacherIds) {
+      await cacheService.delPattern(`classlive:teacher:*:${teacherId}*`);
+    }
 
     return {
       message: `Đã cấp quyền bài giảng thành công cho ${created.length} Giáo viên.`,
@@ -341,8 +345,11 @@ class SchoolService {
 
     await teacherAssignmentRepository.deleteAssignment(assignmentId);
 
-    // Invalidate Cache
+    // Invalidate Cache cho School Admin và Giáo viên liên quan
     await cacheService.delPattern(`classlive:school:*:${schoolAdminId}*`);
+    if (assignment.teacherId) {
+      await cacheService.delPattern(`classlive:teacher:*:${assignment.teacherId}*`);
+    }
 
     return { message: 'Đã thu hồi quyền bài giảng của Giáo viên thành công.' };
   }
