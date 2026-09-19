@@ -44,7 +44,7 @@ const TenantAssignModal = ({ isOpen, onClose, lesson, onSuccess }) => {
       (admin.schoolName && admin.schoolName.toLowerCase().includes(term)) ||
       (admin.email && admin.email.toLowerCase().includes(term))
     );
-  });
+  }); 
 
   const handleToggleSelect = (id) => {
     setSelectedIds(prev => 

@@ -12,7 +12,43 @@ const TenantService = {
     return res.data;
   },
 
-  // === LESSON MANAGEMENT ===
+  // === LESSON MANAGEMENT & DIRECT S3 UPLOADS ===
+  getPresignedUploadUrl: async ({ fileName, mimeType, lessonId }) => {
+    const res = await axiosClient.post('/tenant/lessons/presigned-upload-url', {
+      fileName,
+      mimeType,
+      lessonId
+    });
+    return res.data;
+  },
+
+  uploadDirectToS3: async (uploadUrl, file, onProgress) => {
+    // Gửi trực tiếp HTTP PUT lên MinIO S3 bằng fetch/XHR không qua axiosClient để tránh dính Authorization header của BE
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', uploadUrl, true);
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          onProgress(percent);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(true);
+        } else {
+          reject(new Error(`Upload lên MinIO thất bại với mã lỗi ${xhr.status}`));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Lỗi mạng khi upload file lên MinIO S3'));
+      xhr.send(file);
+    });
+  },
+
   getLessons: async (page = 1, limit = 10) => {
     const res = await axiosClient.get(`/tenant/lessons?page=${page}&limit=${limit}`);
     return res.data;
@@ -23,20 +59,19 @@ const TenantService = {
     return res.data;
   },
 
-  createLesson: async (formData) => {
-    const res = await axiosClient.post('/tenant/lessons', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+  createLesson: async (payload) => {
+    // Hỗ trợ cả JSON object lẫn FormData
+    const isFormData = payload instanceof FormData;
+    const res = await axiosClient.post('/tenant/lessons', payload, {
+      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' }
     });
     return res.data;
   },
 
-  updateLesson: async (id, formData) => {
-    const res = await axiosClient.put(`/tenant/lessons/${id}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+  updateLesson: async (id, payload) => {
+    const isFormData = payload instanceof FormData;
+    const res = await axiosClient.put(`/tenant/lessons/${id}`, payload, {
+      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' }
     });
     return res.data;
   },

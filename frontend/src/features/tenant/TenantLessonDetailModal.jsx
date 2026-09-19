@@ -22,8 +22,21 @@ const TenantLessonDetailModal = ({ isOpen, onClose, lesson }) => {
     return `http://localhost:5000${url}`;
   };
 
-  const isPdf = (url) => url?.toLowerCase().endsWith('.pdf');
-  const isImage = (url) => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url || '');
+  const isPdf = (file) => {
+    if (!file) return false;
+    if (file.mimetype === 'application/pdf') return true;
+    const name = (file.originalName || file.name || '').toLowerCase();
+    const cleanUrl = (file.url || '').split('?')[0].toLowerCase();
+    return name.endsWith('.pdf') || cleanUrl.endsWith('.pdf');
+  };
+
+  const isImage = (file) => {
+    if (!file) return false;
+    if (file.mimetype && file.mimetype.startsWith('image/')) return true;
+    const name = (file.originalName || file.name || '').toLowerCase();
+    const cleanUrl = (file.url || '').split('?')[0].toLowerCase();
+    return /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(name) || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(cleanUrl);
+  };
 
   return createPortal(
     <div className="tenant-modal-overlay animate-fade-in" onClick={onClose}>
@@ -158,13 +171,13 @@ const TenantLessonDetailModal = ({ isOpen, onClose, lesson }) => {
                       </a>
                     </div>
 
-                    {isPdf(selectedPreviewFile.url) ? (
+                    {isPdf(selectedPreviewFile) ? (
                       <iframe 
-                        src={getFullFileUrl(selectedPreviewFile.url)} 
+                        src={`${getFullFileUrl(selectedPreviewFile.url)}#toolbar=1&navpanes=0`} 
                         className="file-preview-embed"
                         title={selectedPreviewFile.originalName}
                       />
-                    ) : isImage(selectedPreviewFile.url) ? (
+                    ) : isImage(selectedPreviewFile) ? (
                       <div style={{ textAlign: 'center', background: '#00000010', borderRadius: '8px', padding: '16px' }}>
                         <img 
                           src={getFullFileUrl(selectedPreviewFile.url)} 

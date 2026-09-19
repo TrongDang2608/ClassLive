@@ -439,3 +439,12 @@
   background: var(--gold-glow);
   color: var(--gold-dark);
 }
+
+.file-preview-embed {
+  width: 100%;
+  height: 520px;
+  border: 1px solid var(--tenant-border);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  display: block;
+}

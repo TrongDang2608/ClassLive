@@ -17,7 +17,8 @@ const TeacherLessonViewer = ({ lesson, onBack }) => {
   const normalizeFile = (file, idx) => {
     if (!file) return { fileName: `Tài liệu ${idx + 1}`, fileUrl: '', rawUrl: '', ext: '' };
     if (typeof file === 'string') {
-      const fileName = file.split('/').pop() || `Tài liệu ${idx + 1}`;
+      const cleanUrl = file.split('?')[0];
+      const fileName = cleanUrl.split('/').pop() || `Tài liệu ${idx + 1}`;
       const ext = fileName.split('.').pop().toLowerCase();
       return {
         fileName,
@@ -26,9 +27,12 @@ const TeacherLessonViewer = ({ lesson, onBack }) => {
         ext
       };
     }
-    const name = file.originalName || file.originalname || file.fileName || file.name || (file.url ? file.url.split('/').pop() : `Tài liệu ${idx + 1}`);
+    const name = file.originalName || file.originalname || file.fileName || file.name || (file.url ? file.url.split('?')[0].split('/').pop() : `Tài liệu ${idx + 1}`);
     const rawPath = file.url || file.filePath || file.path || '';
-    const ext = name.split('.').pop().toLowerCase();
+    const cleanPath = (rawPath || '').split('?')[0];
+    const rawExt = (name.split('.').pop() || cleanPath.split('.').pop() || '').toLowerCase();
+    const ext = file.mimetype === 'application/pdf' ? 'pdf' : rawExt;
+
     return {
       fileName: name,
       fileUrl: getFullFileUrl(rawPath),

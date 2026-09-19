@@ -9,6 +9,7 @@ const path = require('path');
 const { initRedis } = require('./config/redis');
 const { initWorkers } = require('./workers');
 const { setupBullBoard } = require('./config/bullBoard');
+const { initMinio } = require('./config/minio');
 
 // Khởi tạo Firebase Admin
 let db;
@@ -26,6 +27,9 @@ try {
 
 // Khởi tạo kết nối Redis (Non-blocking & Graceful Fallback)
 initRedis();
+
+// Khởi tạo kết nối MinIO S3 & Tự động tạo Buckets
+initMinio();
 
 // Khởi động các Background Workers
 initWorkers();

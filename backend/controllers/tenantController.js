@@ -60,6 +60,28 @@ class TenantController {
     });
   });
 
+  // POST /api/tenant/lessons/presigned-upload-url
+  getPresignedUploadUrl = catchAsync(async (req, res, next) => {
+    const tenantAdminId = req.user.id;
+    const { lessonId, fileName, mimeType } = req.body;
+
+    if (!fileName) {
+      return res.status(400).json({ success: false, message: 'Tên file là bắt buộc' });
+    }
+
+    const result = await tenantService.getPresignedUploadUrl(
+      tenantAdminId,
+      lessonId,
+      fileName,
+      mimeType || 'application/octet-stream'
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  });
+
   // POST /api/tenant/lessons
   createLesson = catchAsync(async (req, res, next) => {
     const tenantAdminId = req.user.id;
@@ -72,16 +94,9 @@ class TenantController {
       subject: dto.subject,
       grade: dto.grade,
       content: dto.content,
-      files: []
+      files: req.body.files || [],
+      uploadedFiles: req.files || []
     };
-
-    // Upload files qua Multer
-    if (req.files && req.files.length > 0) {
-      lessonData.files = req.files.map(file => ({
-        originalName: file.originalname,
-        url: `/uploads/${file.filename}`
-      }));
-    }
 
     const createdLesson = await tenantService.createLesson(tenantAdminId, lessonData);
 
@@ -100,48 +115,9 @@ class TenantController {
     dto.validate();
 
     const updateData = dto.toUpdateData();
+    updateData.existingFiles = req.body.existingFiles;
 
-    // Xử lý giữ/xóa file cũ
-    const oldLesson = await tenantService.getLessonById(lessonId, tenantAdminId);
-    const oldFiles = oldLesson?.files || [];
-
-    let finalFiles = [];
-    if (req.body.existingFiles !== undefined) {
-      try {
-        finalFiles = typeof req.body.existingFiles === 'string' 
-          ? JSON.parse(req.body.existingFiles) 
-          : req.body.existingFiles;
-      } catch (e) {
-        finalFiles = oldFiles;
-      }
-
-      // Xóa file không giữ lại khỏi thư mục uploads
-      const keptUrls = finalFiles.map(f => f.url);
-      const removedFiles = oldFiles.filter(f => !keptUrls.includes(f.url));
-      removedFiles.forEach(f => {
-        if (f.url) {
-          const filePath = path.join(__dirname, '..', f.url);
-          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        }
-      });
-    } else {
-      finalFiles = oldFiles;
-    }
-
-    // Thêm các file mới tải lên
-    if (req.files && req.files.length > 0) {
-      const newFiles = req.files.map(file => ({
-        originalName: file.originalname,
-        url: `/uploads/${file.filename}`
-      }));
-      finalFiles = [...finalFiles, ...newFiles];
-    }
-
-    if (req.body.existingFiles !== undefined || (req.files && req.files.length > 0)) {
-      updateData.files = finalFiles;
-    }
-
-    const updatedLesson = await tenantService.updateLesson(lessonId, tenantAdminId, updateData);
+    const updatedLesson = await tenantService.updateLesson(lessonId, tenantAdminId, updateData, req.files || []);
 
     res.status(200).json({
       success: true,

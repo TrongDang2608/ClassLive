@@ -2,6 +2,8 @@ const userRepository = require('../repositories/userRepository');
 const lessonRepository = require('../repositories/lessonRepository');
 const teacherAssignmentRepository = require('../repositories/teacherAssignmentRepository');
 const cacheService = require('./cacheService');
+const storageService = require('./storageService');
+const { BUCKETS } = require('../config/minio');
 const AppError = require('../utils/AppError');
 
 class TeacherService {
@@ -198,8 +200,27 @@ class TeacherService {
         throw new AppError('Bài giảng không tồn tại hoặc đã bị xóa.', 404);
       }
 
+      // Tự động cập nhật đường dẫn Presigned Download URL cho các file lưu trên MinIO S3
+      const filesWithPresignedUrls = await Promise.all(
+        (lesson.files || []).map(async (file) => {
+          if (file && (file.storageType === 'minio' || file.key)) {
+            const presignedUrl = await storageService.getPresignedUrl(
+              file.bucket || BUCKETS.LESSONS, 
+              file.key, 
+              7200
+            );
+            return {
+              ...file,
+              url: presignedUrl
+            };
+          }
+          return file;
+        })
+      );
+
       return {
         ...lesson,
+        files: filesWithPresignedUrls,
         assignedAt: assignment.assignedAt,
         assignmentId: assignment.id
       };

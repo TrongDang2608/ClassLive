@@ -21,8 +21,21 @@ const SchoolLessonDetailModal = ({ isOpen, onClose, lesson }) => {
     return `http://localhost:5000${url}`;
   };
 
-  const isPdf = (url) => url?.toLowerCase().endsWith('.pdf');
-  const isImage = (url) => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url || '');
+  const isPdf = (file) => {
+    if (!file) return false;
+    if (file.mimetype === 'application/pdf') return true;
+    const name = (file.originalName || file.name || '').toLowerCase();
+    const cleanUrl = (file.url || '').split('?')[0].toLowerCase();
+    return name.endsWith('.pdf') || cleanUrl.endsWith('.pdf');
+  };
+
+  const isImage = (file) => {
+    if (!file) return false;
+    if (file.mimetype && file.mimetype.startsWith('image/')) return true;
+    const name = (file.originalName || file.name || '').toLowerCase();
+    const cleanUrl = (file.url || '').split('?')[0].toLowerCase();
+    return /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(name) || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(cleanUrl);
+  };
 
   return createPortal(
     <div className="modal-overlay" onClick={onClose}>
@@ -147,13 +160,13 @@ const SchoolLessonDetailModal = ({ isOpen, onClose, lesson }) => {
                         </a>
                       </div>
 
-                      {isPdf(selectedPreviewFile.url) ? (
+                      {isPdf(selectedPreviewFile) ? (
                         <iframe 
                           src={getFullFileUrl(selectedPreviewFile.url)} 
                           style={{ width: '100%', height: '460px', border: 'none', borderRadius: '10px', background: '#FFFFFF' }}
                           title={selectedPreviewFile.originalName}
                         />
-                      ) : isImage(selectedPreviewFile.url) ? (
+                      ) : isImage(selectedPreviewFile) ? (
                         <div style={{ textAlign: 'center', padding: '16px', background: '#FFFFFF', borderRadius: '10px' }}>
                           <img 
                             src={getFullFileUrl(selectedPreviewFile.url)} 

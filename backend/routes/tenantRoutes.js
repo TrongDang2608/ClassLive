@@ -5,19 +5,9 @@ const path = require('path');
 const tenantController = require('../controllers/tenantController');
 const { verifyToken, restrictTo } = require('../middlewares/authMiddleware');
 
-// Cấu hình Multer để upload file vào thư mục /uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname.replace(/\s+/g, '-'));
-  }
-});
-
+// Cấu hình Multer lưu vào memoryBuffer để chuyển tiếp trực tiếp sang MinIO S3
 const upload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 } // Giới hạn 50MB
 });
 
@@ -32,6 +22,7 @@ router.get('/dashboard-stats', tenantController.getDashboardStats);
 // === QUẢN LÝ BÀI GIẢNG ===
 router.get('/lessons', tenantController.getLessons);
 router.get('/lessons/:id', tenantController.getLessonDetails);
+router.post('/lessons/presigned-upload-url', tenantController.getPresignedUploadUrl);
 router.post('/lessons', upload.any(), tenantController.createLesson);
 router.put('/lessons/:id', upload.any(), tenantController.updateLesson);
 router.delete('/lessons/:id', tenantController.deleteLesson);
