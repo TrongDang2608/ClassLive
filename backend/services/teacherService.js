@@ -15,8 +15,9 @@ class TeacherService {
       if (!user) throw new AppError('Không tìm thấy tài khoản Giáo viên.', 404);
 
       let schoolAdmin = null;
-      if (user.schoolAdminId) {
-        const schoolUser = await userRepository.findById(user.schoolAdminId);
+      const adminId = user?.schoolAdminId || user?.createdBy;
+      if (adminId) {
+        const schoolUser = await userRepository.findById(adminId);
         if (schoolUser) {
           schoolAdmin = schoolUser.toSafeObject ? schoolUser.toSafeObject() : {
             id: schoolUser.id,
@@ -45,8 +46,9 @@ class TeacherService {
       // Lấy thông tin trường chủ quản
       const user = await userRepository.findById(teacherId);
       let schoolAdmin = null;
-      if (user && user.schoolAdminId) {
-        const schoolUser = await userRepository.findById(user.schoolAdminId);
+      const adminId = user?.schoolAdminId || user?.createdBy;
+      if (adminId) {
+        const schoolUser = await userRepository.findById(adminId);
         if (schoolUser) {
           schoolAdmin = schoolUser.toSafeObject ? schoolUser.toSafeObject() : {
             id: schoolUser.id,

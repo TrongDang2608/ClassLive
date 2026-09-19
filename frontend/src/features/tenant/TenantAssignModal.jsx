@@ -36,14 +36,15 @@ const TenantAssignModal = ({ isOpen, onClose, lesson, onSuccess }) => {
     }
   };
 
-  const filteredAdmins = (Array.isArray(schoolAdmins) ? schoolAdmins : []).filter(admin => {
+  const safeSchoolAdmins = Array.isArray(schoolAdmins) ? schoolAdmins : [];
+  const filteredAdmins = safeSchoolAdmins.filter(admin => {
     const term = searchTerm.toLowerCase();
     return (
       (admin.name && admin.name.toLowerCase().includes(term)) ||
       (admin.schoolName && admin.schoolName.toLowerCase().includes(term)) ||
       (admin.email && admin.email.toLowerCase().includes(term))
     );
-  });
+  }); 
 
   const handleToggleSelect = (id) => {
     setSelectedIds(prev => 
