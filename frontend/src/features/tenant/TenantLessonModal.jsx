@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Upload, FileText, Trash2, Loader2, Plus, CheckCircle, Eye } from 'lucide-react';
+import { X, Upload, FileText, Trash2, Loader2, CheckCircle, HardDriveDownload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import TenantService from './TenantService';
 import './tenant.css';
@@ -17,6 +17,8 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
   const [existingFiles, setExistingFiles] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [uploadProgresses, setUploadProgresses] = useState({});
+  const [currentUploadingFile, setCurrentUploadingFile] = useState('');
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -41,6 +43,8 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
         setExistingFiles([]);
       }
       setNewFiles([]);
+      setUploadProgresses({});
+      setCurrentUploadingFile('');
     }
   }, [isOpen, lesson]);
 
@@ -75,28 +79,67 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
 
     setLoading(true);
     try {
-      const data = new FormData();
-      data.append('title', formData.title);
-      data.append('description', formData.description);
-      data.append('subject', formData.subject);
-      data.append('grade', formData.grade);
-      data.append('content', formData.content);
+      const uploadedFilesMeta = [];
 
-      if (lesson) {
-        // Cập nhật bài giảng: truyền existingFiles dưới dạng JSON string
-        data.append('existingFiles', JSON.stringify(existingFiles));
+      // 1. Upload từng file mới trực tiếp lên MinIO S3 bằng Presigned Upload URL
+      for (const file of newFiles) {
+        setCurrentUploadingFile(file.name);
+        setUploadProgresses(prev => ({ ...prev, [file.name]: 0 }));
+
+        try {
+          // Xin URL ký số từ Backend
+          const presignedRes = await TenantService.getPresignedUploadUrl({
+            fileName: file.name,
+            mimeType: file.type,
+            lessonId: lesson?.id
+          });
+
+          const { uploadUrl, key, bucket, name, storageType } = presignedRes.data;
+
+          if (uploadUrl && storageType === 'minio') {
+            // Đẩy trực tiếp từ trình duyệt Client lên MinIO qua HTTP PUT kèm theo % progress
+            await TenantService.uploadDirectToS3(uploadUrl, file, (percent) => {
+              setUploadProgresses(prev => ({ ...prev, [file.name]: percent }));
+            });
+
+            uploadedFilesMeta.push({
+              originalName: file.name,
+              key: key,
+              bucket: bucket,
+              size: file.size,
+              mimetype: file.type,
+              storageType: 'minio'
+            });
+          } else {
+            // Fallback nếu MinIO chưa được bật: Chuyển file thành FormData để server xử lý
+            const fallbackFormData = new FormData();
+            fallbackFormData.append('files', file);
+          }
+        } catch (err) {
+          console.error(`Lỗi upload file '${file.name}':`, err);
+          toast.error(`Tải file '${file.name}' lên MinIO thất bại!`);
+          setLoading(false);
+          return;
+        }
       }
 
-      // Đính kèm các file mới được tải lên
-      newFiles.forEach(file => {
-        data.append('files', file);
-      });
+      // 2. Gửi JSON Metadata hoàn chỉnh về Backend để lưu vào Database
+      const finalFiles = [...existingFiles, ...uploadedFilesMeta];
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        subject: formData.subject,
+        grade: formData.grade,
+        content: formData.content,
+        files: finalFiles,
+        existingFiles: existingFiles
+      };
 
       if (lesson) {
-        await TenantService.updateLesson(lesson.id, data);
+        await TenantService.updateLesson(lesson.id, payload);
         toast.success('Cập nhật bài giảng thành công!');
       } else {
-        await TenantService.createLesson(data);
+        await TenantService.createLesson(payload);
         toast.success('Tạo bài giảng mới thành công!');
       }
 
@@ -107,6 +150,7 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
       toast.error(error.response?.data?.error || 'Không thể lưu bài giảng. Vui lòng thử lại!');
     } finally {
       setLoading(false);
+      setCurrentUploadingFile('');
     }
   };
 
@@ -126,7 +170,7 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
               {lesson ? 'Cập Nhật Học Liệu' : 'Tạo Học Liệu Mới'}
             </h2>
           </div>
-          <button className="btn-close-circle" onClick={onClose} title="Đóng">
+          <button className="btn-close-circle" onClick={onClose} title="Đóng" disabled={loading}>
             <X size={18} />
           </button>
         </div>
@@ -143,6 +187,7 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
                 placeholder="Ví dụ: Chương 1: Mệnh đề & Tập hợp Toán 10" 
                 value={formData.title} 
                 onChange={handleChange}
+                disabled={loading}
                 required
               />
             </div>
@@ -151,7 +196,7 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div className="form-group" style={{ margin: 0 }}>
                 <label>Môn học</label>
-                <select name="subject" className="form-input" value={formData.subject} onChange={handleChange}>
+                <select name="subject" className="form-input" value={formData.subject} onChange={handleChange} disabled={loading}>
                   <option value="Toán Học">Toán Học</option>
                   <option value="Vật Lý">Vật Lý</option>
                   <option value="Hóa Học">Hóa Học</option>
@@ -167,7 +212,7 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
 
               <div className="form-group" style={{ margin: 0 }}>
                 <label>Khối lớp</label>
-                <select name="grade" className="form-input" value={formData.grade} onChange={handleChange}>
+                <select name="grade" className="form-input" value={formData.grade} onChange={handleChange} disabled={loading}>
                   <option value="Lớp 10">Lớp 10</option>
                   <option value="Lớp 11">Lớp 11</option>
                   <option value="Lớp 12">Lớp 12</option>
@@ -186,6 +231,7 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
                 placeholder="Mô tả mục tiêu kiến thức bài học..." 
                 value={formData.description} 
                 onChange={handleChange}
+                disabled={loading}
               />
             </div>
 
@@ -199,12 +245,16 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
                 placeholder="Nhập nội dung bài giảng tại đây..." 
                 value={formData.content} 
                 onChange={handleChange}
+                disabled={loading}
               />
             </div>
 
             {/* Tải tệp tài liệu đính kèm */}
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label>Tài liệu đính kèm (File PDF, Word, Ảnh, MP4...)</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <HardDriveDownload size={16} color="var(--tenant-primary)" />
+                Tài liệu đính kèm (Upload Trực Tiếp Lên MinIO S3 - Không Giới Hạn Dung Lượng)
+              </label>
               
               {/* Box upload */}
               <div 
@@ -214,23 +264,24 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
                   padding: '20px',
                   textAlign: 'center',
                   background: 'var(--bg-warm)',
-                  cursor: 'pointer',
+                  cursor: loading ? 'not-allowed' : 'pointer',
                   transition: 'all var(--transition)'
                 }}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => !loading && fileInputRef.current?.click()}
               >
                 <Upload size={24} color="var(--tenant-primary)" style={{ marginBottom: '6px' }} />
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
-                  Bấm để chọn file từ máy tính
+                  Bấm để chọn file lớn từ máy tính
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  Hỗ trợ nhiều định dạng tệp (Tối đa 50MB/file)
+                  Hỗ trợ các định dạng tệp (PDF, Video MP4, Word, Zip...). Upload siêu tốc Direct-to-S3.
                 </div>
                 <input 
                   type="file" 
                   ref={fileInputRef} 
                   onChange={handleFileChange} 
                   multiple 
+                  disabled={loading}
                   style={{ display: 'none' }} 
                 />
               </div>
@@ -248,7 +299,7 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
                           <FileText size={16} color="var(--tenant-primary)" />
                           <span>{file.originalName || file.url?.split('/').pop() || `File #${idx+1}`}</span>
                         </div>
-                        <button type="button" onClick={() => handleRemoveExistingFile(idx)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }} title="Xóa file">
+                        <button type="button" onClick={() => handleRemoveExistingFile(idx)} disabled={loading} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }} title="Xóa file">
                           <Trash2 size={15} />
                         </button>
                       </div>
@@ -257,25 +308,55 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
                 </div>
               )}
 
-              {/* Danh sách file vừa chọn mới */}
+              {/* Danh sách file vừa chọn mới kèm theo Thanh Tiến Trình Upload % */}
               {newFiles.length > 0 && (
                 <div style={{ marginTop: '12px' }}>
                   <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--tenant-primary)', marginBottom: '6px' }}>
                     Tệp mới chọn ({newFiles.length}):
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {newFiles.map((file, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--tenant-primary-subtle)', border: '1px solid var(--tenant-border)', borderRadius: '6px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                          <FileText size={16} color="var(--tenant-primary)" />
-                          <span style={{ fontWeight: 500 }}>{file.name}</span>
-                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {newFiles.map((file, idx) => {
+                      const progress = uploadProgresses[file.name] || 0;
+                      const isUploading = currentUploadingFile === file.name;
+
+                      return (
+                        <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '10px 12px', background: 'var(--tenant-primary-subtle)', border: '1px solid var(--tenant-border)', borderRadius: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <FileText size={16} color="var(--tenant-primary)" />
+                              <span style={{ fontWeight: 500 }}>{file.name}</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                            </div>
+
+                            {!loading && (
+                              <button type="button" onClick={() => handleRemoveNewFile(idx)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }} title="Bỏ chọn">
+                                <Trash2 size={15} />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Progress Bar thời gian thực */}
+                          {loading && (
+                            <div style={{ marginTop: '4px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--tenant-primary)', fontWeight: 600, marginBottom: '2px' }}>
+                                <span>{isUploading ? 'Đang upload trực tiếp lên MinIO S3...' : (progress === 100 ? 'Hoàn tất' : 'Chờ tải lên...')}</span>
+                                <span>{progress}%</span>
+                              </div>
+                              <div style={{ height: '6px', width: '100%', background: '#E2E8F0', borderRadius: '3px', overflow: 'hidden' }}>
+                                <div 
+                                  style={{ 
+                                    height: '100%', 
+                                    width: `${progress}%`, 
+                                    background: progress === 100 ? '#10B981' : 'var(--tenant-primary)', 
+                                    transition: 'width 0.2s ease-in-out' 
+                                  }} 
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <button type="button" onClick={() => handleRemoveNewFile(idx)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }} title="Bỏ chọn">
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -289,7 +370,7 @@ const TenantLessonModal = ({ isOpen, onClose, lesson, onSuccess }) => {
             <button type="submit" className="btn-emerald" disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Đang lưu...
+                  <Loader2 size={16} className="animate-spin" /> Đang đẩy file S3...
                 </>
               ) : (
                 <>
