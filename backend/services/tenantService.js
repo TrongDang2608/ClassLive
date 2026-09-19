@@ -2,6 +2,8 @@ const lessonRepository = require('../repositories/lessonRepository');
 const assignmentRepository = require('../repositories/assignmentRepository');
 const userRepository = require('../repositories/userRepository');
 const cacheService = require('./cacheService');
+const storageService = require('./storageService');
+const { BUCKETS } = require('../config/minio');
 const AppError = require('../utils/AppError');
 
 class TenantService {
@@ -96,13 +98,56 @@ class TenantService {
       if (lesson.createdBy !== tenantAdminId) {
         throw new AppError('Bạn không có quyền truy cập bài giảng này', 403);
       }
-      return lesson;
+
+      const filesWithUrls = await Promise.all(
+        (lesson.files || []).map(async (file) => {
+          if (file && (file.storageType === 'minio' || file.key)) {
+            const presignedUrl = await storageService.getPresignedUrl(
+              file.bucket || BUCKETS.LESSONS,
+              file.key,
+              7200
+            );
+            return {
+              ...file,
+              url: presignedUrl
+            };
+          }
+          return file;
+        })
+      );
+
+      return {
+        ...lesson,
+        files: filesWithUrls
+      };
     });
+  }
+
+  async getPresignedUploadUrl(tenantAdminId, lessonId, fileName, mimeType) {
+    const targetLessonId = lessonId || `temp_${Date.now()}`;
+    return await storageService.createLessonUploadUrl(tenantAdminId, targetLessonId, fileName, mimeType);
   }
 
   async createLesson(tenantAdminId, lessonData) {
     if (!lessonData.title || lessonData.title.trim() === '') {
       throw new AppError('Tiêu đề bài giảng không được để trống', 400);
+    }
+
+    const tempId = Date.now().toString();
+    const uploadedFiles = lessonData.uploadedFiles || [];
+    const filesMeta = Array.isArray(lessonData.files) ? [...lessonData.files] : [];
+
+    for (const file of uploadedFiles) {
+      const uploadRes = await storageService.uploadLessonFile(tenantAdminId, tempId, file);
+      filesMeta.push({
+        originalName: uploadRes.name,
+        url: uploadRes.url,
+        key: uploadRes.key,
+        bucket: uploadRes.bucket,
+        storageType: uploadRes.storageType,
+        size: uploadRes.size,
+        mimetype: uploadRes.mimetype
+      });
     }
 
     const newLessonData = {
@@ -111,7 +156,7 @@ class TenantService {
       subject: lessonData.subject || '',
       grade: lessonData.grade || '',
       content: lessonData.content || '',
-      files: lessonData.files || [],
+      files: filesMeta,
       createdBy: tenantAdminId,
       createdAt: Date.now(),
       updatedAt: Date.now()
@@ -125,7 +170,7 @@ class TenantService {
     return { id: lessonId, ...newLessonData };
   }
 
-  async updateLesson(lessonId, tenantAdminId, updateData) {
+  async updateLesson(lessonId, tenantAdminId, updateData, uploadedFiles = []) {
     const lesson = await lessonRepository.findLessonById(lessonId);
     if (!lesson) {
       throw new AppError('Bài giảng không tồn tại', 404);
@@ -134,11 +179,52 @@ class TenantService {
       throw new AppError('Bạn không có quyền chỉnh sửa bài giảng này', 403);
     }
 
+    const oldFiles = lesson.files || [];
+    let finalFiles = [];
+
+    if (updateData.existingFiles !== undefined) {
+      try {
+        finalFiles = typeof updateData.existingFiles === 'string' 
+          ? JSON.parse(updateData.existingFiles) 
+          : updateData.existingFiles;
+      } catch (e) {
+        finalFiles = oldFiles;
+      }
+
+      // Xóa file không giữ lại khỏi MinIO S3
+      const keptKeys = finalFiles.map(f => f.key || f.url);
+      const removedFiles = oldFiles.filter(f => !keptKeys.includes(f.key || f.url));
+      for (const f of removedFiles) {
+        if (f.key) {
+          await storageService.deleteFile(f.bucket || BUCKETS.LESSONS, f.key);
+        }
+      }
+    } else {
+      finalFiles = oldFiles;
+    }
+
+    // Upload các file mới lên MinIO S3
+    for (const file of uploadedFiles) {
+      const uploadRes = await storageService.uploadLessonFile(tenantAdminId, lessonId, file);
+      finalFiles.push({
+        originalName: uploadRes.name,
+        url: uploadRes.url,
+        key: uploadRes.key,
+        bucket: uploadRes.bucket,
+        storageType: uploadRes.storageType,
+        size: uploadRes.size,
+        mimetype: uploadRes.mimetype
+      });
+    }
+
     const payload = {
       ...updateData,
+      files: finalFiles,
       updatedAt: Date.now()
     };
 
+    delete payload.existingFiles;
+    delete payload.uploadedFiles;
     delete payload.id;
     delete payload.createdBy;
     delete payload.createdAt;
@@ -159,6 +245,9 @@ class TenantService {
     if (lesson.createdBy !== tenantAdminId) {
       throw new AppError('Bạn không có quyền xóa bài giảng này', 403);
     }
+
+    // Xóa toàn bộ file trong prefix của bài giảng trên MinIO S3
+    await storageService.deleteFolder(BUCKETS.LESSONS, `tenants/${tenantAdminId}/lessons/${lessonId}`);
 
     await lessonRepository.deleteLesson(lessonId);
     await assignmentRepository.deleteByLessonId(lessonId);

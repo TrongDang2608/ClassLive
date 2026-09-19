@@ -5,6 +5,8 @@ const teacherAssignmentRepository = require('../repositories/teacherAssignmentRe
 const { addEmailJob } = require('../queues');
 const jwt = require('jsonwebtoken');
 const cacheService = require('./cacheService');
+const storageService = require('./storageService');
+const { BUCKETS } = require('../config/minio');
 const AppError = require('../utils/AppError');
 
 class SchoolService {
@@ -149,7 +151,27 @@ class SchoolService {
       const lesson = await lessonRepository.findById(lessonId);
       if (!lesson) throw new AppError('Bài giảng không tồn tại.', 404);
 
-      return lesson;
+      const filesWithUrls = await Promise.all(
+        (lesson.files || []).map(async (file) => {
+          if (file && (file.storageType === 'minio' || file.key)) {
+            const presignedUrl = await storageService.getPresignedUrl(
+              file.bucket || BUCKETS.LESSONS,
+              file.key,
+              7200
+            );
+            return {
+              ...file,
+              url: presignedUrl
+            };
+          }
+          return file;
+        })
+      );
+
+      return {
+        ...lesson,
+        files: filesWithUrls
+      };
     });
   }
 

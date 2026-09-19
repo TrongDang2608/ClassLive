@@ -19,8 +19,9 @@ const TenantAssignmentListModal = ({ isOpen, onClose, lesson, onRevokeSuccess })
   const fetchAssignments = async () => {
     setFetching(true);
     try {
-      const data = await TenantService.getLessonAssignments(lesson.id);
-      setAssignments(data || []);
+      const res = await TenantService.getLessonAssignments(lesson.id);
+      const list = Array.isArray(res) ? res : (res?.data || []);
+      setAssignments(list);
     } catch (error) {
       console.error('Lỗi lấy danh sách cấp quyền:', error);
       toast.error('Không thể lấy danh sách đơn vị được cấp quyền.');
@@ -33,7 +34,7 @@ const TenantAssignmentListModal = ({ isOpen, onClose, lesson, onRevokeSuccess })
     if (!window.confirm('Bạn có chắc chắn muốn thu hồi quyền truy cập học liệu của đơn vị này?')) return;
     setRevokingId(assignmentId);
     try {
-      await TenantService.revokeLessonAssignment(assignmentId);
+      await TenantService.revokeAssignment(assignmentId);
       toast.success('Thu hồi quyền truy cập thành công!');
       setAssignments(prev => prev.filter(item => item.id !== assignmentId));
       if (onRevokeSuccess) onRevokeSuccess();
