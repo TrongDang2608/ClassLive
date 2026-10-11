@@ -92,6 +92,11 @@ class AuthService {
     const code = this._generateCode();
     const expiresAt = Date.now() + 5 * 60 * 1000;
 
+    console.log(`\n======================================================`);
+    console.log(`🔑 [DEV TEST OTP] Tài khoản: ${user.username || user.email}`);
+    console.log(`👉 MÃ XÁC THỰC OTP: >>> ${code} <<< (Hiệu lực: 5 phút)`);
+    console.log(`======================================================\n`);
+
     // 1. Lưu đồng thời vào Firestore (bền vững) và Redis Cache (tốc độ cao TTL 300s)
     await otpRepository.saveOtp(user.id, code, expiresAt);
     await cacheService.set(`classlive:otp:${user.id}`, code, 300);
@@ -124,6 +129,11 @@ class AuthService {
 
     const code = this._generateCode();
     const expiresAt = Date.now() + 5 * 60 * 1000;
+
+    console.log(`\n======================================================`);
+    console.log(`🔑 [DEV TEST OTP (GỬI LẠI)] Tài khoản: ${user.username || user.email}`);
+    console.log(`👉 MÃ XÁC THỰC OTP: >>> ${code} <<< (Hiệu lực: 5 phút)`);
+    console.log(`======================================================\n`);
 
     // Lưu vào Firestore + Redis Cache
     await otpRepository.saveOtp(userId, code, expiresAt);
