@@ -48,13 +48,13 @@ In many schools, universities, and training centers, teachers and staff spend to
 - **Email Invite:** New users get an email link to set up their own password.
 - **Safe Sessions:** Secure login tokens keep your account safe.
 
-<!-- ================================================================= -->
-<!-- 📸 SCREENSHOT PLACEHOLDER 1: 2-STEP LOGIN FLOW                    -->
-<!-- GIAO DIỆN CẦN CHỤP:                                               -->
-<!-- 1. Màn hình Đăng nhập (/login) với Username/Email & Mật khẩu      -->
-<!-- 2. Màn hình Nhập mã xác thực OTP 6 số (/otp)                      -->
-<!-- ================================================================= -->
-![2-Step Login & Code](screenshots/auth_flow.png)
+<img width="1915" height="866" alt="Login page" src="https://github.com/user-attachments/assets/2b2df6f4-974d-4321-9fba-99314fd25b33" />
+
+*Figure 1: Login page (Username & Password)*
+
+<img width="1915" height="868" alt="OTP verification screen" src="https://github.com/user-attachments/assets/176d2394-35e3-46e8-a3e1-7079e1c9108b" />
+
+*Figure 2: 6-digit OTP code verification*
 
 ---
 
@@ -64,13 +64,13 @@ In many schools, universities, and training centers, teachers and staff spend to
 - **Search & Filter:** Find users fast by role, name, or email.
 - **Send Invites:** Sends an email link so new admins can set their password.
 
-<!-- ================================================================= -->
-<!-- 📸 SCREENSHOT PLACEHOLDER 2: SUPER ADMIN USER LIST                -->
-<!-- GIAO DIỆN CẦN CHỤP:                                               -->
-<!-- 1. Bảng danh sách người dùng toàn hệ thống (/admin)                -->
-<!-- 2. Modal Thêm người dùng mới (chọn vai trò, nhập email/sđt)        -->
-<!-- ================================================================= -->
-![Super Admin User List](screenshots/admin_dashboard.png)
+<img width="1916" height="867" alt="Super Admin user management" src="https://github.com/user-attachments/assets/1a34ce78-0add-4302-9602-e04a062093c0" />
+
+*Figure 3: Super Admin - User management dashboard*
+
+<img width="1911" height="863" alt="Add user modal" src="https://github.com/user-attachments/assets/4da7dfb8-4a1a-4c4c-b646-367fc976c619" />
+
+*Figure 4: Super Admin - Add new user modal*
 
 ---
 
@@ -80,14 +80,17 @@ In many schools, universities, and training centers, teachers and staff spend to
 - **Dashboard:** See total lessons, partner schools, and a 6-month growth chart.
 - **Live Chat:** Chat with school admins in real-time.
 
-<!-- ================================================================= -->
-<!-- 📸 SCREENSHOT PLACEHOLDER 3: TENANT ADMIN DASHBOARD & LESSONS     -->
-<!-- GIAO DIỆN CẦN CHỤP:                                               -->
-<!-- 1. Dashboard Tenant kèm biểu đồ thống kê 6 tháng                   -->
-<!-- 2. Modal Tạo/Sửa bài giảng kèm phần tải file đính kèm Direct S3   -->
-<!-- 3. Modal Phân bổ bài giảng (Assign) cho các School Admin           -->
-<!-- ================================================================= -->
-![Tenant Admin Dashboard & Lessons](screenshots/tenant_dashboard.png)
+<img width="1917" height="871" alt="Tenant Admin overview" src="https://github.com/user-attachments/assets/73319dde-f634-4de7-a59e-024d2274562f" />
+
+*Figure 5: Tenant Admin - Overview dashboard with 6-month growth analytics*
+
+<img width="1917" height="867" alt="Lesson management" src="https://github.com/user-attachments/assets/1d65ca76-118c-413f-b36e-a68b3441d52f" />
+
+*Figure 6: Tenant Admin - Lesson management and curriculum upload*
+
+<img width="1914" height="865" alt="Assign lesson to schools" src="https://github.com/user-attachments/assets/e18b90e0-b7c8-41e5-86e3-48fc8550c5d4" />
+
+*Figure 7: Tenant Admin - Assign lessons to School Admins*
 
 ---
 
@@ -97,13 +100,13 @@ In many schools, universities, and training centers, teachers and staff spend to
 - **Give Lessons to Teachers:** Choose which teacher teaches which lesson with one click.
 - **School Chat:** Chat with Tenant Admins and Teachers.
 
-<!-- ================================================================= -->
-<!-- 📸 SCREENSHOT PLACEHOLDER 4: SCHOOL ADMIN DASHBOARD & TEACHERS     -->
-<!-- GIAO DIỆN CẦN CHỤP:                                               -->
-<!-- 1. Màn hình Quản lý Giáo viên trong trường (/school-admin)         -->
-<!-- 2. Modal Phân bổ bài giảng cho giáo viên phụ trách                 -->
-<!-- ================================================================= -->
-![School Admin Dashboard & Teachers](screenshots/school_dashboard.png)
+<img width="1914" height="865" alt="School Admin teacher directory" src="https://github.com/user-attachments/assets/1e35c5dc-fc09-4a4a-8a3b-d2329ab4c444" />
+
+*Figure 8: School Admin - Teacher management directory*
+
+<img width="1918" height="868" alt="Assign lessons to teachers" src="https://github.com/user-attachments/assets/2d3ab760-87cc-4c48-9993-26b124f16be2" />
+
+*Figure 9: School Admin - Assign lessons to teachers*
 
 ---
 
@@ -113,13 +116,13 @@ In many schools, universities, and training centers, teachers and staff spend to
 - **Full-Screen View:** Click one button to show lessons on a projector or TV for your class.
 - **Chat:** Send quick messages to your school admin whenever you need help.
 
-<!-- ================================================================= -->
-<!-- 📸 SCREENSHOT PLACEHOLDER 5: TEACHER LESSON VIEWER                -->
-<!-- GIAO DIỆN CẦN CHỤP:                                               -->
-<!-- 1. Danh sách kho bài giảng được cấp của Giáo viên (/teacher)       -->
-<!-- 2. Giao diện xem bài giảng chi tiết (PDF Viewer / Trình chiếu file)-->
-<!-- ================================================================= -->
-![Teacher Workspace & Viewer](screenshots/teacher_viewer.png)
+<img width="1916" height="871" alt="Teacher assigned lessons" src="https://github.com/user-attachments/assets/a7083bfa-d980-43da-848c-3f937749ffcf" />
+
+*Figure 10: Teacher - Assigned lessons list*
+
+<img width="1915" height="865" alt="Teacher lesson viewer" src="https://github.com/user-attachments/assets/2f5aab80-6f2b-4ad7-ace3-3c9fbed65737" />
+
+*Figure 11: Teacher - In-app PDF and video lesson viewer*
 
 ---
 
@@ -127,13 +130,13 @@ In many schools, universities, and training centers, teachers and staff spend to
 - **Live Chat:** Fast messages between users. Shows `typing...` when someone is typing.
 - **Job Dashboard:** Visit `http://localhost:5000/admin/queues` to see emails and codes sent in the background.
 
-<!-- ================================================================= -->
-<!-- 📸 SCREENSHOT PLACEHOLDER 6: LIVE CHAT & JOB DASHBOARD             -->
-<!-- GIAO DIỆN CẦN CHỤP:                                               -->
-<!-- 1. Cửa sổ Chat Real-time giữa 2 người dùng                         -->
-<!-- 2. Giao diện Bull-Board Dashboard xem hàng đợi (/admin/queues)     -->
-<!-- ================================================================= -->
-![Live Chat & Job Dashboard](screenshots/chat_and_queue.png)
+<img width="1915" height="866" alt="Live chat" src="https://github.com/user-attachments/assets/67673f40-c9f6-4950-9825-1d70f4c00602" />
+
+*Figure 12: Real-time live chat with typing indicator*
+
+<img width="1913" height="866" alt="Bull-Board dashboard" src="https://github.com/user-attachments/assets/017aeae6-5126-457f-a0e0-2112b2abdcd8" />
+
+*Figure 13: Bull-Board queue monitoring dashboard (`/admin/queues`)*
 
 ---
 
