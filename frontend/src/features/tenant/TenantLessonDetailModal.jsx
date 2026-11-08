@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, BookOpen, Calendar, Tag, FileText, Download, Eye, ExternalLink } from 'lucide-react';
+import { getFullFileUrl } from '../../utils/constants';
 import './tenant.css';
 
 const TenantLessonDetailModal = ({ isOpen, onClose, lesson }) => {
@@ -14,12 +15,6 @@ const TenantLessonDetailModal = ({ isOpen, onClose, lesson }) => {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });
-  };
-
-  const getFullFileUrl = (url) => {
-    if (!url) return '';
-    if (url.startsWith('http')) return url;
-    return `http://localhost:5000${url}`;
   };
 
   const isPdf = (file) => {

@@ -22,3 +22,5 @@ Thumbs.db
 
 # Các file tải lên (Uploads)
 backend/uploads/
+
+docs/*

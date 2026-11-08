@@ -4,15 +4,10 @@ import {
   BookOpen, Maximize, Minimize, ExternalLink, Calendar, Layers, Clock, Info, CheckCircle2, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getFullFileUrl } from '../../utils/constants';
 
 const TeacherLessonViewer = ({ lesson, onBack }) => {
   const contentRef = useRef(null);
-
-  const getFullFileUrl = (url) => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    return `http://localhost:5000${url.startsWith('/') ? '' : '/'}${url}`;
-  };
 
   const normalizeFile = (file, idx) => {
     if (!file) return { fileName: `Tài liệu ${idx + 1}`, fileUrl: '', rawUrl: '', ext: '' };
